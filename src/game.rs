@@ -24,6 +24,24 @@ enum Direction {
 }
 
 impl Direction {
+    fn rotate_cw(self) -> Self {
+        match self {
+            Self::Up => Self::Right,
+            Self::Left => Self::Up,
+            Self::Down => Self::Left,
+            Self::Right => Self::Down,
+        }
+    }
+
+    fn rotate_ccw(self) -> Self {
+        match self {
+            Self::Up => Self::Left,
+            Self::Left => Self::Down,
+            Self::Down => Self::Right,
+            Self::Right => Self::Up,
+        }
+    }
+
     fn to_radians(self) -> f32 {
         PI * match self {
             Self::Up => 0.0,
@@ -51,7 +69,7 @@ fn new_game(mut commands: Commands, asset_server: Res<AssetServer>) {
         sprite: SpriteBundle {
             texture: spaceship_sprite,
             sprite: Sprite {
-                custom_size: Some(Vec2 { x: 64.0, y: 64.0 }),
+                custom_size: Some(Vec2 { x: 100.0, y: 100.0 }),
                 ..default()
             },
             transform: Transform::from_xyz(0.0, 0.0, 0.0),
@@ -64,27 +82,20 @@ fn update_direction(
     input: Res<Input<KeyCode>>,
     mut directions: Query<&mut Direction, With<Spaceship>>,
 ) {
-    let new_direction = if input.any_just_pressed([KeyCode::W, KeyCode::Up]) {
-        Direction::Up
-    } else if input.any_just_pressed([KeyCode::A, KeyCode::Left]) {
-        Direction::Left
-    } else if input.any_just_pressed([KeyCode::S, KeyCode::Down]) {
-        Direction::Down
+    if input.any_just_pressed([KeyCode::A, KeyCode::Left]) {
+        for mut direction in directions.iter_mut() {
+            *direction = direction.rotate_ccw()
+        }
     } else if input.any_just_pressed([KeyCode::D, KeyCode::Right]) {
-        Direction::Right
-    } else {
-        return;
+        for mut direction in directions.iter_mut() {
+            *direction = direction.rotate_cw()
+        }
     };
-
-    for mut direction in directions.iter_mut() {
-        *direction = new_direction
-    }
 }
 
 fn apply_direction(mut spaceships: Query<(&Direction, &mut Transform), With<Spaceship>>) {
     for (&direction, mut transform) in spaceships.iter_mut() {
         let target_quat = Quat::from_rotation_z(direction.to_radians());
-        transform.rotation = transform.rotation.slerp(target_quat, 0.5);
+        transform.rotation = transform.rotation.slerp(target_quat, 0.3);
     }
 }
-
