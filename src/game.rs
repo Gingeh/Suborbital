@@ -6,8 +6,11 @@ use rand::{
     thread_rng, Rng,
 };
 
-use crate::AppState;
+use crate::{AppState, utils};
 use std::{f32::consts::PI, time::Duration};
+
+#[derive(Component)]
+struct Game;
 
 #[derive(Component)]
 struct Spaceship;
@@ -80,6 +83,7 @@ struct Health(u32);
 #[derive(Bundle)]
 struct SpaceshipBundle {
     spaceship_marker: Spaceship,
+    game_marker: Game,
     direction: Direction,
     health: Health,
     #[bundle]
@@ -101,6 +105,7 @@ struct AsteroidTimer(Timer);
 #[derive(Bundle)]
 struct AsteroidBundle {
     asteroid_marker: Asteroid,
+    game_marker: Game,
     direction: Direction,
     hazard_type: HazardType,
     #[bundle]
@@ -133,7 +138,8 @@ impl Plugin for GamePlugin {
                     handle_shake,
                 )
                     .in_set(OnUpdate(AppState::Playing)),
-            );
+            )
+            .add_system(utils::despawn_with::<Game>.in_schedule(OnExit(AppState::Playing)));
     }
 }
 
@@ -142,6 +148,7 @@ fn start_game(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands.spawn(SpaceshipBundle {
         spaceship_marker: Spaceship,
+        game_marker: Game,
         direction: Direction::Up,
         health: Health(3),
         sprite: SpriteBundle {
@@ -200,6 +207,7 @@ fn spawn_asteroids(
 
     commands.spawn(AsteroidBundle {
         asteroid_marker: Asteroid,
+        game_marker: Game,
         direction,
         hazard_type,
         sprite: SpriteBundle {
@@ -237,6 +245,7 @@ fn handle_hits(
     mut commands: Commands,
     mut event_reader: EventReader<HitEvent>,
     mut spaceships: Query<(Entity, &Direction, &mut Health), With<Spaceship>>,
+    mut app_state: ResMut<NextState<AppState>>,
 ) {
     for event in event_reader.iter() {
         let (entity, &direction, mut health) = spaceships.single_mut();
@@ -260,6 +269,10 @@ fn handle_hits(
                     )));
                 }
             }
+        }
+
+        if health.0 == 0 {
+            app_state.set(AppState::Menu);
         }
     }
 }
