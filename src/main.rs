@@ -2,6 +2,7 @@
 
 use bevy::prelude::*;
 
+mod game;
 mod menu;
 mod splash;
 mod utils;
@@ -21,6 +22,7 @@ fn main() {
         .add_state::<AppState>()
         .add_plugin(splash::SplashPlugin)
         .add_plugin(menu::MenuPlugin)
+        .add_plugin(game::GamePlugin)
         .add_startup_system(setup)
         .run();
 }
