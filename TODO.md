@@ -8,4 +8,3 @@
 - Sound effects and music
 - Name and logo
 - Set up submission page
-- Split `game.rs` into multiple files
