@@ -10,6 +10,7 @@ struct MainMenu;
 enum MenuButton {
     Play,
     Quit,
+    Clubbo,
 }
 
 pub struct MenuPlugin;
@@ -81,8 +82,55 @@ fn setup_menu(mut commands: Commands, assets: Res<GameAssets>) {
                     MenuButton::Quit,
                 ))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section("Quit", text_style));
+                    parent.spawn(TextBundle::from_section("Quit", text_style.clone()));
                 });
+        });
+
+    commands
+        .spawn((
+            ButtonBundle {
+                style: Style {
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::Center,
+                    position_type: PositionType::Absolute,
+                    position: UiRect {
+                        right: Val::Px(10.0),
+                        bottom: Val::Px(10.0),
+                        ..default()
+                    },
+                    ..default()
+                },
+                background_color: Color::NONE.into(),
+                ..default()
+            },
+            MainMenu,
+            MenuButton::Clubbo,
+        ))
+        .with_children(|parent| {
+            parent.spawn(ImageBundle {
+                style: Style {
+                    size: Size::new(Val::Px(100.0), Val::Px(100.0)),
+                    ..default()
+                },
+                image: UiImage::new(assets.clubbo.clone()),
+                ..default()
+            });
+            parent.spawn(TextBundle::from_section(
+                "Art by Clubbo",
+                TextStyle {
+                    font: assets.font.clone(),
+                    font_size: 30.0,
+                    color: Color::WHITE,
+                },
+            ));
+            parent.spawn(TextBundle::from_section(
+                "(Click Me!)",
+                TextStyle {
+                    font: assets.font.clone(),
+                    font_size: 20.0,
+                    color: Color::WHITE,
+                },
+            ));
         });
 }
 
@@ -96,6 +144,13 @@ fn menu_action(
             match menu_button_action {
                 MenuButton::Play => app_state.set(AppState::Playing),
                 MenuButton::Quit => app_exit_writer.send(AppExit),
+                MenuButton::Clubbo => {
+                    if let Err(error) =
+                        webbrowser::open("https://www.instagram.com/clubbo_cartoons/")
+                    {
+                        error!("Failed to open browser: {}", error);
+                    }
+                }
             }
         }
     }
