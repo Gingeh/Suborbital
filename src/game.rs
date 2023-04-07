@@ -1,12 +1,8 @@
 use bevy::prelude::*;
 use rand::seq::SliceRandom;
-use rand::{
-    distributions::Standard,
-    prelude::Distribution,
-    thread_rng, Rng,
-};
+use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
-use crate::{AppState, utils};
+use crate::{utils, AppState, GameAssets};
 use std::{f32::consts::PI, time::Duration};
 
 #[derive(Component)]
@@ -90,7 +86,7 @@ struct SpaceshipBundle {
     sprite: SpriteBundle,
 }
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
 enum HazardType {
     Rock,
     Ice,
@@ -121,8 +117,7 @@ pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_event::<HitEvent>()
+        app.add_event::<HitEvent>()
             .insert_resource(AsteroidTimer(Timer::new(
                 Duration::from_secs(1),
                 TimerMode::Repeating,
@@ -143,21 +138,19 @@ impl Plugin for GamePlugin {
     }
 }
 
-fn start_game(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let spaceship_sprite = asset_server.load("ship.png");
-
+fn start_game(mut commands: Commands, assets: Res<GameAssets>) {
     commands.spawn(SpaceshipBundle {
         spaceship_marker: Spaceship,
         game_marker: Game,
         direction: Direction::Up,
         health: Health(3),
         sprite: SpriteBundle {
-            texture: spaceship_sprite,
+            texture: assets.spaceship.clone(),
             sprite: Sprite {
-                custom_size: Some(Vec2 { x: 100.0, y: 100.0 }),
+                custom_size: Some(Vec2 { x: 220.0, y: 220.0 }),
                 ..default()
             },
-            transform: Transform::from_xyz(0.0, 0.0, 1.0),
+            transform: Transform::from_xyz(0.0, 0.0, 2.0),
             ..default()
         },
     });
@@ -186,7 +179,7 @@ fn apply_direction(mut spaceships: Query<(&Direction, &mut Transform), With<Spac
 
 fn spawn_asteroids(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
+    assets: Res<GameAssets>,
     time: Res<Time>,
     mut timer: ResMut<AsteroidTimer>,
 ) {
@@ -201,8 +194,8 @@ fn spawn_asteroids(
         .choose(&mut rng)
         .expect("The array isn't empty");
     let sprite = match hazard_type {
-        HazardType::Rock => asset_server.load("rock.png"),
-        HazardType::Ice => asset_server.load("ice.png"),
+        HazardType::Rock => assets.rock_astroid.clone(),
+        HazardType::Ice => assets.ice_astroid.clone(),
     };
 
     commands.spawn(AsteroidBundle {
@@ -213,10 +206,10 @@ fn spawn_asteroids(
         sprite: SpriteBundle {
             texture: sprite,
             sprite: Sprite {
-                custom_size: Some(Vec2 { x: 50.0, y: 50.0 }),
+                custom_size: Some(Vec2 { x: 80.0, y: 80.0 }),
                 ..default()
             },
-            transform: Transform::from_translation(direction.to_vec3() * -500.0)
+            transform: Transform::from_translation(direction.to_vec3() * -500.0 + Vec3::Z)
                 .with_rotation(direction.to_quat()),
             ..default()
         },
@@ -225,18 +218,30 @@ fn spawn_asteroids(
 
 fn update_asteroids(
     mut commands: Commands,
+    assets: Res<GameAssets>,
     mut event_writer: EventWriter<HitEvent>,
-    mut asteroids: Query<(Entity, &Direction, &HazardType, &mut Transform), With<Asteroid>>,
+    mut asteroids: Query<
+        (
+            Entity,
+            &Direction,
+            &HazardType,
+            &mut Transform,
+            &mut Handle<Image>,
+        ),
+        With<Asteroid>,
+    >,
     time: Res<Time>,
 ) {
-    for (entity, &direction, &hazard_type, mut transform) in asteroids.iter_mut() {
+    for (entity, &direction, &hazard_type, mut transform, mut texture) in asteroids.iter_mut() {
         transform.translation += direction.to_vec3() * time.delta_seconds() * 200.0;
-        if transform.translation.length_squared() <= 2500.0 {
+        if transform.translation.length() <= 70.0 {
             commands.entity(entity).despawn();
             event_writer.send(HitEvent {
                 hazard_type,
                 from_direction: direction,
             });
+        } else if transform.translation.length() <= 100.0 && hazard_type == HazardType::Rock {
+            *texture = assets.broken_rock_astroid.clone();
         }
     }
 }
@@ -251,8 +256,7 @@ fn handle_hits(
         let (entity, &direction, mut health) = spaceships.single_mut();
         match event.hazard_type {
             HazardType::Rock => {
-                if event.from_direction != direction.rotate_ccw()
-                {
+                if event.from_direction != direction.rotate_ccw() {
                     health.0 -= 1;
                     commands.entity(entity).insert(Shaking(Timer::new(
                         Duration::from_millis(100),

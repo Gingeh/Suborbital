@@ -1,7 +1,7 @@
 use bevy::app::AppExit;
 use bevy::prelude::*;
 
-use crate::{utils, AppState};
+use crate::{utils, AppState, GameAssets};
 
 #[derive(Component)]
 struct MainMenu;
@@ -22,10 +22,7 @@ impl Plugin for MenuPlugin {
     }
 }
 
-fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let logo = asset_server.load("logo.png");
-    let font = asset_server.load("Overpass-SemiBold.ttf");
-
+fn setup_menu(mut commands: Commands, assets: Res<GameAssets>) {
     let button_style = Style {
         size: Size::new(Val::Px(250.0), Val::Px(65.0)),
         margin: UiRect::all(Val::Px(20.0)),
@@ -35,7 +32,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     };
 
     let text_style = TextStyle {
-        font,
+        font: assets.font.clone(),
         font_size: 40.0,
         color: Color::BLACK,
     };
@@ -60,7 +57,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                     size: Size::new(Val::Auto, Val::Px(400.0)),
                     ..default()
                 },
-                image: UiImage::new(logo),
+                image: UiImage::new(assets.game_logo.clone()),
                 ..default()
             });
             parent

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{utils, AppState};
+use crate::{utils, AppState, GameAssets};
 
 #[derive(Component)]
 struct SplashScreen;
@@ -18,10 +18,7 @@ impl Plugin for SplashPlugin {
     }
 }
 
-fn setup_splash(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let icon = asset_server.load("bevy.png");
-    let font = asset_server.load("Overpass-SemiBold.ttf");
-
+fn setup_splash(mut commands: Commands, assets: Res<GameAssets>) {
     commands
         .spawn((
             NodeBundle {
@@ -42,15 +39,15 @@ fn setup_splash(mut commands: Commands, asset_server: Res<AssetServer>) {
                     size: Size::new(Val::Auto, Val::Px(200.0)),
                     ..default()
                 },
-                image: UiImage::new(icon),
+                image: UiImage::new(assets.bevy_logo.clone()),
                 ..default()
             });
             parent.spawn(TextBundle::from_section(
                 "Made with Bevy",
                 TextStyle {
-                    font,
+                    font: assets.font.clone(),
                     font_size: 40.0,
-                    color: Color::BLACK,
+                    color: Color::WHITE,
                 },
             ));
         });
