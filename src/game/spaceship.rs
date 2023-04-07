@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use crate::{AppState, GameAssets};
+use crate::{score::ScoreEvent, AppState, GameAssets};
 
 use super::{Direction, Game, HazardType, HitEvent, Shaking};
 
@@ -65,15 +65,18 @@ pub(super) fn apply_direction(
 
 pub(super) fn handle_hits(
     mut commands: Commands,
-    mut event_reader: EventReader<HitEvent>,
+    mut hit_event_reader: EventReader<HitEvent>,
+    mut score_event_witer: EventWriter<ScoreEvent>,
     mut spaceships: Query<(Entity, &Direction, &mut Health), With<Spaceship>>,
     mut app_state: ResMut<NextState<AppState>>,
 ) {
-    for event in event_reader.iter() {
+    for event in hit_event_reader.iter() {
         let (entity, &direction, mut health) = spaceships.single_mut();
         match event.hazard_type {
             HazardType::Rock => {
-                if event.from_direction != direction.rotate_ccw() {
+                if event.from_direction == direction.rotate_ccw() {
+                    score_event_witer.send(ScoreEvent::Increment);
+                } else {
                     health.0 -= 1;
                     commands.entity(entity).insert(Shaking(Timer::new(
                         Duration::from_millis(100),
@@ -82,7 +85,9 @@ pub(super) fn handle_hits(
                 }
             }
             HazardType::Ice => {
-                if event.from_direction != direction {
+                if event.from_direction == direction {
+                    score_event_witer.send(ScoreEvent::Increment);
+                } else {
                     health.0 -= 1;
                     commands.entity(entity).insert(Shaking(Timer::new(
                         Duration::from_millis(100),
@@ -93,6 +98,7 @@ pub(super) fn handle_hits(
         }
 
         if health.0 == 0 {
+            score_event_witer.send(ScoreEvent::Reset);
             app_state.set(AppState::Menu);
         }
     }

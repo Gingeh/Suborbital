@@ -10,6 +10,7 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 mod game;
 mod menu;
+mod score;
 mod splash;
 mod utils;
 
@@ -71,6 +72,7 @@ fn main() {
         .add_plugin(splash::SplashPlugin)
         .add_plugin(menu::MenuPlugin)
         .add_plugin(game::GamePlugin)
+        .add_plugin(score::ScorePlugin)
         .add_startup_system(setup)
         .add_system(animate_background)
         .run();
@@ -78,11 +80,14 @@ fn main() {
 
 fn setup(mut commands: Commands, assets: Res<GameAssets>) {
     commands.spawn(Camera2dBundle::default());
-    commands.spawn((SpriteBundle {
-        texture: assets.background.clone(),
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
-        ..default()
-    }, Background));
+    commands.spawn((
+        SpriteBundle {
+            texture: assets.background.clone(),
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
+            ..default()
+        },
+        Background,
+    ));
 }
 
 fn animate_background(mut background: Query<&mut Transform, With<Background>>, time: Res<Time>) {
