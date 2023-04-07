@@ -1,5 +1,7 @@
 #![allow(clippy::type_complexity)]
 
+use std::f32::consts::PI;
+
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
 
@@ -47,6 +49,9 @@ struct GameAssets {
     game_logo: Handle<Image>,
 }
 
+#[derive(Component)]
+struct Background;
+
 fn main() {
     let mut app = App::new();
 
@@ -67,14 +72,20 @@ fn main() {
         .add_plugin(menu::MenuPlugin)
         .add_plugin(game::GamePlugin)
         .add_startup_system(setup)
+        .add_system(animate_background)
         .run();
 }
 
 fn setup(mut commands: Commands, assets: Res<GameAssets>) {
     commands.spawn(Camera2dBundle::default());
-    commands.spawn(SpriteBundle {
+    commands.spawn((SpriteBundle {
         texture: assets.background.clone(),
         transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
         ..default()
-    });
+    }, Background));
+}
+
+fn animate_background(mut background: Query<&mut Transform, With<Background>>, time: Res<Time>) {
+    let mut transform = background.single_mut();
+    transform.translation.x = (time.elapsed_seconds() * PI / 60.0).cos() * 693.0;
 }
