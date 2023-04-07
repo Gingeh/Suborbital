@@ -31,7 +31,7 @@ impl Distribution<Direction> for Standard {
 }
 
 impl Direction {
-    fn rotate_cw(self) -> Self {
+    const fn rotate_cw(self) -> Self {
         match self {
             Self::Up => Self::Right,
             Self::Left => Self::Up,
@@ -40,7 +40,7 @@ impl Direction {
         }
     }
 
-    fn rotate_ccw(self) -> Self {
+    const fn rotate_ccw(self) -> Self {
         match self {
             Self::Up => Self::Left,
             Self::Left => Self::Down,
@@ -60,7 +60,7 @@ impl Direction {
         )
     }
 
-    fn to_vec3(self) -> Vec3 {
+    const fn to_vec3(self) -> Vec3 {
         match self {
             Self::Up => Vec3::Y,
             Self::Left => Vec3::NEG_X,
@@ -162,11 +162,11 @@ fn update_direction(
 ) {
     if input.any_just_pressed([KeyCode::A, KeyCode::Left]) {
         for mut direction in directions.iter_mut() {
-            *direction = direction.rotate_ccw()
+            *direction = direction.rotate_ccw();
         }
     } else if input.any_just_pressed([KeyCode::D, KeyCode::Right]) {
         for mut direction in directions.iter_mut() {
-            *direction = direction.rotate_cw()
+            *direction = direction.rotate_cw();
         }
     };
 }
@@ -292,7 +292,7 @@ fn handle_shake(
             commands.entity(entity).remove::<Shaking>();
         } else {
             let progress = shaking.0.percent();
-            transform.scale = Vec3::splat(1.0 + f32::sin(progress * 2.0 * PI) * 0.1);
+            transform.scale = Vec3::splat(f32::sin(progress * 2.0 * PI).mul_add(0.1, 1.0));
         }
     }
 }
