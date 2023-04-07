@@ -28,7 +28,7 @@ impl Plugin for ScorePlugin {
             high_score: 0,
         })
         .add_event::<ScoreEvent>()
-        .add_startup_system(spawn_scoreboard)
+        .add_system(spawn_scoreboard.in_schedule(OnExit(AppState::Splash)))
         .add_systems((update_score, update_scoreboard))
         .add_system(show_score.in_schedule(OnEnter(AppState::Playing)))
         .add_system(hide_score.in_schedule(OnExit(AppState::Playing)));
