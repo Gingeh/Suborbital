@@ -55,7 +55,7 @@ fn setup_menu(mut commands: Commands, assets: Res<GameAssets>) {
         .with_children(|parent| {
             parent.spawn(ImageBundle {
                 style: Style {
-                    size: Size::new(Val::Auto, Val::Px(400.0)),
+                    size: Size::new(Val::Auto, Val::Px(300.0)),
                     ..default()
                 },
                 image: UiImage::new(assets.game_logo.clone()),

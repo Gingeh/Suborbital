@@ -4,5 +4,4 @@
 - Health display
 - Game over and respawn screen
 - Sound effects and music
-- Name and logo
 - Set up submission page

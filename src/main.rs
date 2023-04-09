@@ -61,7 +61,9 @@ fn main() {
 
     app.add_plugins(DefaultPlugins.set(WindowPlugin {
         primary_window: Some(Window {
+            title: "Suborbital".to_string(),
             resolution: WindowResolution::new(800.0, 800.0),
+            resizable: false,
             ..default()
         }),
         ..default()
