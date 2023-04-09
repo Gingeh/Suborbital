@@ -9,6 +9,7 @@ use bevy_asset_loader::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 mod game;
+mod gameover;
 mod menu;
 mod score;
 mod splash;
@@ -20,13 +21,16 @@ enum AppState {
     Splash,
     Menu,
     Playing,
-    Paused,
+    GameOver,
 }
 
 #[derive(AssetCollection, Resource)]
 struct GameAssets {
     #[asset(path = "ship.png")]
     spaceship: Handle<Image>,
+
+    #[asset(path = "ship-broken.png")]
+    broken_spaceship: Handle<Image>,
 
     #[asset(path = "rock.png")]
     rock_astroid: Handle<Image>,
@@ -77,6 +81,7 @@ fn main() {
         .add_plugin(splash::SplashPlugin)
         .add_plugin(menu::MenuPlugin)
         .add_plugin(game::GamePlugin)
+        .add_plugin(gameover::GameOverPlugin)
         .add_plugin(score::ScorePlugin)
         .add_startup_system(setup)
         .add_system(animate_background)

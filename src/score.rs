@@ -8,10 +8,7 @@ pub struct Score {
     pub high_score: usize,
 }
 
-pub enum ScoreEvent {
-    Increment,
-    Reset,
-}
+pub struct ScoreEvent;
 
 #[derive(Component)]
 struct ScoreDisplay;
@@ -30,25 +27,21 @@ impl Plugin for ScorePlugin {
         .add_event::<ScoreEvent>()
         .add_system(spawn_scoreboard.in_schedule(OnExit(AppState::Splash)))
         .add_systems((update_score, update_scoreboard))
-        .add_system(show_score.in_schedule(OnEnter(AppState::Playing)))
+        .add_systems((show_score, reset_score).in_schedule(OnEnter(AppState::Playing)))
         .add_system(hide_score.in_schedule(OnExit(AppState::Playing)));
     }
 }
 
 fn update_score(mut score: ResMut<Score>, mut score_events: EventReader<ScoreEvent>) {
-    for event in score_events.iter() {
-        match event {
-            ScoreEvent::Increment => {
-                score.score += 1;
-                if score.score > score.high_score {
-                    score.high_score = score.score;
-                }
-            }
-            ScoreEvent::Reset => {
-                score.score = 0;
-            }
-        }
+    score.score += score_events.len();
+    if score.score > score.high_score {
+        score.high_score = score.score;
     }
+    score_events.clear();
+}
+
+fn reset_score(mut score: ResMut<Score>) {
+    score.score = 0;
 }
 
 fn spawn_scoreboard(mut commands: Commands, assets: Res<GameAssets>) {

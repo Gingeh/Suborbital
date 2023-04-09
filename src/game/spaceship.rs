@@ -75,7 +75,7 @@ pub(super) fn handle_hits(
         match event.hazard_type {
             HazardType::Rock => {
                 if event.from_direction == direction.rotate_ccw() {
-                    score_event_witer.send(ScoreEvent::Increment);
+                    score_event_witer.send(ScoreEvent);
                 } else {
                     health.0 -= 1;
                     commands.entity(entity).insert(Shaking(Timer::new(
@@ -86,7 +86,7 @@ pub(super) fn handle_hits(
             }
             HazardType::Ice => {
                 if event.from_direction == direction {
-                    score_event_witer.send(ScoreEvent::Increment);
+                    score_event_witer.send(ScoreEvent);
                 } else {
                     health.0 -= 1;
                     commands.entity(entity).insert(Shaking(Timer::new(
@@ -98,8 +98,7 @@ pub(super) fn handle_hits(
         }
 
         if health.0 == 0 {
-            score_event_witer.send(ScoreEvent::Reset);
-            app_state.set(AppState::Menu);
+            app_state.set(AppState::GameOver);
         }
     }
 }

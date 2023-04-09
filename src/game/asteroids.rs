@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::{GameAssets, score::Score};
+use crate::{score::Score, GameAssets};
 use bevy::prelude::*;
 use rand::seq::SliceRandom;
 use rand::{thread_rng, Rng};
@@ -34,7 +34,9 @@ pub(super) fn spawn_asteroids(
     if !timer.just_finished() {
         return;
     }
-    timer.set_duration(Duration::from_secs_f32(37.5 / (score.score as f32 + 50.0) + 0.25));
+    timer.set_duration(Duration::from_secs_f32(
+        37.5 / (score.score as f32 + 50.0) + 0.25,
+    ));
 
     let mut rng = thread_rng();
     let direction = rng.gen();
