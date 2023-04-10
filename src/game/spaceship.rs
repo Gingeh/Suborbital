@@ -120,6 +120,16 @@ fn handle_hits(
                     )));
                 }
             }
+            HazardType::Crate => {
+                if event.from_direction == direction.rotate_cw().rotate_cw() {
+                    health.0 += 1;
+                    score_event_witer.send(ScoreEvent);
+                    commands.entity(entity).insert(Shaking(Timer::new(
+                        Duration::from_millis(200),
+                        TimerMode::Once,
+                    )));
+                }
+            }
         }
 
         if health.0 == 0 {

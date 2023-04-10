@@ -9,6 +9,7 @@ use crate::{utils::Direction, AppState};
 use super::score::Score;
 
 mod asteroids;
+mod crates;
 mod laser;
 
 #[derive(Resource, Deref, DerefMut)]
@@ -19,14 +20,16 @@ pub enum HazardType {
     Rock,
     Ice,
     Laser,
+    Crate,
 }
 
 impl Distribution<HazardType> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> HazardType {
-        match rng.gen_range(0..=6) {
-            0..=2 => HazardType::Rock,
-            3..=5 => HazardType::Ice,
-            _ => HazardType::Laser, // 14% chance of spawning a space laser
+        match rng.gen_range(0..10) {
+            0..=3 => HazardType::Rock,  // 4/10 chance
+            4..=6 => HazardType::Ice,   // 3/10 chance
+            7..=8 => HazardType::Laser, // 2/10 chance
+            _ => HazardType::Crate,     // 1/10 chance
         }
     }
 }
@@ -44,7 +47,8 @@ impl Plugin for HazardsPlugin {
             .add_event::<HitEvent>()
             .add_system(spawn_hazards.in_set(OnUpdate(AppState::Playing)))
             .add_plugin(asteroids::AsteroidsPlugin)
-            .add_plugin(laser::LaserPlugin);
+            .add_plugin(laser::LaserPlugin)
+            .add_plugin(crates::CratePlugin);
     }
 }
 
@@ -69,5 +73,6 @@ fn spawn_hazards(
         HazardType::Rock => commands.add(asteroids::SpawnAsteroidCommand::Rock),
         HazardType::Ice => commands.add(asteroids::SpawnAsteroidCommand::Ice),
         HazardType::Laser => commands.add(laser::SpawnLaserCommand),
+        HazardType::Crate => commands.add(crates::SpawnCrateCommand),
     };
 }

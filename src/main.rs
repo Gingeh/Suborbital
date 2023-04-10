@@ -69,6 +69,9 @@ struct GameAssets {
 
     #[asset(path = "heart-broken.png")]
     broken_heart: Handle<Image>,
+
+    #[asset(path = "health-crate.png")]
+    health_crate: Handle<Image>,
 }
 
 #[derive(Component)]
