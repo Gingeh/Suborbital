@@ -14,7 +14,7 @@ use super::{
 pub struct Spaceship;
 
 #[derive(Component)]
-pub struct Health(u32);
+pub struct Health(pub u32);
 
 #[derive(Bundle)]
 struct SpaceshipBundle {

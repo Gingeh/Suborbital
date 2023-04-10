@@ -5,6 +5,7 @@ use bevy::prelude::*;
 use crate::{utils, AppState};
 
 pub mod hazards;
+pub mod health;
 pub mod score;
 pub mod spaceship;
 
@@ -21,6 +22,7 @@ impl Plugin for GamePlugin {
         app.add_plugin(spaceship::SpaceshipPlugin)
             .add_plugin(hazards::HazardsPlugin)
             .add_plugin(score::ScorePlugin)
+            .add_plugin(health::HealthPlugin)
             .add_system(handle_shake)
             .add_system(utils::despawn_with::<Game>.in_schedule(OnExit(AppState::Playing)));
     }
