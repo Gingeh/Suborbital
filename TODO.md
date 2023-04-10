@@ -1,6 +1,5 @@
 # To-Do List
 
-- Space lasers
 - Health display
 - Sound effects and music
-- Set up submission page
+- Set up submission page (in progress)
