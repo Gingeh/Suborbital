@@ -109,7 +109,17 @@ fn handle_hits(
                     )));
                 }
             }
-            HazardType::Laser => todo!(),
+            HazardType::Laser => {
+                if event.from_direction == direction.rotate_cw() {
+                    score_event_witer.send(ScoreEvent);
+                } else {
+                    health.0 -= 1;
+                    commands.entity(entity).insert(Shaking(Timer::new(
+                        Duration::from_millis(100),
+                        TimerMode::Once,
+                    )));
+                }
+            }
         }
 
         if health.0 == 0 {

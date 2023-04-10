@@ -60,6 +60,9 @@ struct GameAssets {
 
     #[asset(path = "satilite-charging.png")]
     satilite_charging: Handle<Image>,
+
+    #[asset(path = "laser.png")]
+    laser: Handle<Image>,
 }
 
 #[derive(Component)]

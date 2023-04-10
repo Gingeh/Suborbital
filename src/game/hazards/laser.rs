@@ -10,6 +10,8 @@ use crate::{
     AppState, GameAssets,
 };
 
+use super::{HazardType, HitEvent};
+
 pub struct LaserPlugin;
 
 impl Plugin for LaserPlugin {
@@ -66,8 +68,10 @@ impl Command for SpawnLaserCommand {
                     custom_size: Some(Vec2 { x: 120.0, y: 120.0 }),
                     ..default()
                 },
-                transform: Transform::from_translation(direction.to_vec3() * -500.0 + Vec3::Z)
-                    .with_rotation(direction.to_quat()),
+                transform: Transform::from_translation(
+                    direction.to_vec3() * -500.0 + Vec3::Z * 2.0,
+                )
+                .with_rotation(direction.to_quat()),
                 ..default()
             },
         });
@@ -86,8 +90,9 @@ fn update_satilites(
         Entity,
     )>,
     assets: Res<GameAssets>,
+    mut hit_event_writer: EventWriter<HitEvent>,
 ) {
-    for (mut timer, mut state, mut sprite, mut transform, direction, entity) in query.iter_mut() {
+    for (mut timer, mut state, mut sprite, mut transform, &direction, entity) in query.iter_mut() {
         timer.0.tick(time.delta());
 
         match *state {
@@ -111,7 +116,23 @@ fn update_satilites(
                     *state = SatiliteState::Firing;
                     timer.0.set_duration(Duration::from_secs_f32(0.5));
                     timer.0.reset();
-                    //TODO: Spawn the laser
+
+                    commands.entity(entity).with_children(|parent| {
+                        parent.spawn(SpriteBundle {
+                            texture: assets.laser.clone(),
+                            sprite: Sprite {
+                                custom_size: Some(Vec2 { x: 20.0, y: 300.0 }),
+                                ..default()
+                            },
+                            transform: Transform::from_translation(Vec3::new(0.0, 200.0, -1.0)),
+                            ..default()
+                        });
+                    });
+
+                    hit_event_writer.send(HitEvent {
+                        from_direction: direction,
+                        hazard_type: HazardType::Laser,
+                    });
                 }
             }
             SatiliteState::Firing => {
@@ -120,6 +141,7 @@ fn update_satilites(
                     *sprite = assets.satilite_idle.clone();
                     timer.0.set_duration(Duration::from_secs_f32(1.0));
                     timer.0.reset();
+                    commands.entity(entity).despawn_descendants();
                 }
             }
             SatiliteState::Retreating => {
