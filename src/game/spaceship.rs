@@ -109,6 +109,7 @@ fn handle_hits(
                     )));
                 }
             }
+            HazardType::Laser => todo!(),
         }
 
         if health.0 == 0 {

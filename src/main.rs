@@ -54,6 +54,12 @@ struct GameAssets {
 
     #[asset(path = "clubbo.png")]
     clubbo: Handle<Image>,
+
+    #[asset(path = "satilite-idle.png")]
+    satilite_idle: Handle<Image>,
+
+    #[asset(path = "satilite-charging.png")]
+    satilite_charging: Handle<Image>,
 }
 
 #[derive(Component)]
