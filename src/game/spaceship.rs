@@ -2,9 +2,13 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use crate::{score::ScoreEvent, AppState, GameAssets};
+use crate::{utils::Direction, AppState, GameAssets};
 
-use super::{Direction, Game, HazardType, HitEvent, Shaking};
+use super::{
+    hazards::{HazardType, HitEvent},
+    score::ScoreEvent,
+    Game, Shaking,
+};
 
 #[derive(Component)]
 pub struct Spaceship;
@@ -22,7 +26,19 @@ struct SpaceshipBundle {
     sprite: SpriteBundle,
 }
 
-pub(super) fn spawn_spaceship(mut commands: Commands, assets: Res<GameAssets>) {
+pub struct SpaceshipPlugin;
+
+impl Plugin for SpaceshipPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system(spawn_spaceship.in_schedule(OnEnter(AppState::Playing)))
+            .add_systems(
+                (update_direction, apply_direction, handle_hits)
+                    .in_set(OnUpdate(AppState::Playing)),
+            );
+    }
+}
+
+fn spawn_spaceship(mut commands: Commands, assets: Res<GameAssets>) {
     commands.spawn(SpaceshipBundle {
         spaceship_marker: Spaceship,
         game_marker: Game,
@@ -40,7 +56,7 @@ pub(super) fn spawn_spaceship(mut commands: Commands, assets: Res<GameAssets>) {
     });
 }
 
-pub(super) fn update_direction(
+fn update_direction(
     input: Res<Input<KeyCode>>,
     mut directions: Query<&mut Direction, With<Spaceship>>,
 ) {
@@ -55,15 +71,13 @@ pub(super) fn update_direction(
     };
 }
 
-pub(super) fn apply_direction(
-    mut spaceships: Query<(&Direction, &mut Transform), With<Spaceship>>,
-) {
+fn apply_direction(mut spaceships: Query<(&Direction, &mut Transform), With<Spaceship>>) {
     let (&direction, mut transform) = spaceships.single_mut();
     let target_quat = direction.to_quat();
     transform.rotation = transform.rotation.slerp(target_quat, 0.3);
 }
 
-pub(super) fn handle_hits(
+fn handle_hits(
     mut commands: Commands,
     mut hit_event_reader: EventReader<HitEvent>,
     mut score_event_witer: EventWriter<ScoreEvent>,

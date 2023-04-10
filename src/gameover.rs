@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{score::Score, utils, AppState, GameAssets};
+use crate::{game::score::Score, utils, AppState, GameAssets};
 
 #[derive(Component)]
 struct GameOver;

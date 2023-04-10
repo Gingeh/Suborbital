@@ -11,7 +11,6 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 mod game;
 mod gameover;
 mod menu;
-mod score;
 mod splash;
 mod utils;
 
@@ -82,7 +81,6 @@ fn main() {
         .add_plugin(menu::MenuPlugin)
         .add_plugin(game::GamePlugin)
         .add_plugin(gameover::GameOverPlugin)
-        .add_plugin(score::ScorePlugin)
         .add_startup_system(setup)
         .add_system(animate_background)
         .run();
