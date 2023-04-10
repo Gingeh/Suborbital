@@ -63,7 +63,7 @@ fn spawn_hazards(
         return;
     }
     timer.set_duration(Duration::from_secs_f32(
-        37.5 / (score.score as f32 + 50.0) + 0.25,
+        6.25 / (score.score as f32 + 5.0) + 0.75,
     ));
 
     let mut rng = thread_rng();
