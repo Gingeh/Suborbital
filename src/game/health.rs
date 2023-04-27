@@ -11,8 +11,11 @@ pub struct HealthPlugin;
 
 impl Plugin for HealthPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(spawn_health_display.in_schedule(OnEnter(AppState::Playing)))
-            .add_system(update_health_display.in_set(OnUpdate(AppState::Playing)));
+        app.add_systems(OnEnter(AppState::Playing), spawn_health_display)
+            .add_systems(
+                Update,
+                update_health_display.run_if(in_state(AppState::Playing)),
+            );
     }
 }
 
@@ -21,11 +24,8 @@ fn spawn_health_display(mut commands: Commands) {
         NodeBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: UiRect {
-                    right: Val::Px(10.0),
-                    bottom: Val::Px(10.0),
-                    ..default()
-                },
+                right: Val::Px(10.0),
+                bottom: Val::Px(10.0),
                 ..default()
             },
             ..default()

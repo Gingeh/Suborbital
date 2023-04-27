@@ -17,9 +17,9 @@ pub struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup_menu.in_schedule(OnEnter(AppState::Menu)))
-            .add_system(menu_action.in_set(OnUpdate(AppState::Menu)))
-            .add_system(utils::despawn_with::<MainMenu>.in_schedule(OnExit(AppState::Menu)));
+        app.add_systems(OnEnter(AppState::Menu), setup_menu)
+            .add_systems(Update, menu_action.run_if(in_state(AppState::Menu)))
+            .add_systems(OnExit(AppState::Menu), utils::despawn_with::<MainMenu>);
     }
 }
 
@@ -93,11 +93,8 @@ fn setup_menu(mut commands: Commands, assets: Res<GameAssets>) {
                     flex_direction: FlexDirection::Column,
                     align_items: AlignItems::Center,
                     position_type: PositionType::Absolute,
-                    position: UiRect {
-                        right: Val::Px(10.0),
-                        bottom: Val::Px(10.0),
-                        ..default()
-                    },
+                    right: Val::Px(10.0),
+                    bottom: Val::Px(10.0),
                     ..default()
                 },
                 background_color: Color::NONE.into(),

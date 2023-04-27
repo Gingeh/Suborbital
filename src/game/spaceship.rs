@@ -30,10 +30,11 @@ pub struct SpaceshipPlugin;
 
 impl Plugin for SpaceshipPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(spawn_spaceship.in_schedule(OnEnter(AppState::Playing)))
+        app.add_systems(OnEnter(AppState::Playing), spawn_spaceship)
             .add_systems(
+                Update,
                 (update_direction, apply_direction, handle_hits)
-                    .in_set(OnUpdate(AppState::Playing)),
+                    .run_if(in_state(AppState::Playing)),
             );
     }
 }

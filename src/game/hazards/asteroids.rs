@@ -11,7 +11,7 @@ pub struct AsteroidsPlugin;
 
 impl Plugin for AsteroidsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(update_asteroids.in_set(OnUpdate(AppState::Playing)));
+        app.add_systems(Update, update_asteroids.run_if(in_state(AppState::Playing)));
     }
 }
 

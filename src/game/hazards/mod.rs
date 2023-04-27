@@ -45,7 +45,7 @@ impl Plugin for HazardsPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(HazardTimer(Timer::from_seconds(1.0, TimerMode::Repeating)))
             .add_event::<HitEvent>()
-            .add_system(spawn_hazards.in_set(OnUpdate(AppState::Playing)))
+            .add_systems(Update, spawn_hazards.run_if(in_state(AppState::Playing)))
             .add_plugin(asteroids::AsteroidsPlugin)
             .add_plugin(laser::LaserPlugin)
             .add_plugin(crates::CratePlugin);

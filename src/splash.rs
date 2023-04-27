@@ -12,9 +12,15 @@ pub struct SplashPlugin;
 
 impl Plugin for SplashPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup_splash.in_schedule(OnEnter(AppState::Splash)))
-            .add_system(countdown_splash_timer.in_set(OnUpdate(AppState::Splash)))
-            .add_system(utils::despawn_with::<SplashScreen>.in_schedule(OnExit(AppState::Splash)));
+        app.add_systems(OnEnter(AppState::Splash), setup_splash)
+            .add_systems(
+                Update,
+                countdown_splash_timer.run_if(in_state(AppState::Splash)),
+            )
+            .add_systems(
+                OnExit(AppState::Splash),
+                utils::despawn_with::<SplashScreen>,
+            );
     }
 }
 

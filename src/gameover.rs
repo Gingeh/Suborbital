@@ -15,9 +15,9 @@ pub struct GameOverPlugin;
 
 impl Plugin for GameOverPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup_menu.in_schedule(OnEnter(AppState::GameOver)))
-            .add_system(menu_action.in_set(OnUpdate(AppState::GameOver)))
-            .add_system(utils::despawn_with::<GameOver>.in_schedule(OnExit(AppState::GameOver)));
+        app.add_systems(OnEnter(AppState::GameOver), setup_menu)
+            .add_systems(Update, menu_action.run_if(in_state(AppState::GameOver)))
+            .add_systems(OnExit(AppState::GameOver), utils::despawn_with::<GameOver>);
     }
 }
 

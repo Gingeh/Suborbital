@@ -23,8 +23,8 @@ impl Plugin for GamePlugin {
             .add_plugin(hazards::HazardsPlugin)
             .add_plugin(score::ScorePlugin)
             .add_plugin(health::HealthPlugin)
-            .add_system(handle_shake)
-            .add_system(utils::despawn_with::<Game>.in_schedule(OnExit(AppState::Playing)));
+            .add_systems(Update, handle_shake)
+            .add_systems(OnExit(AppState::Playing), utils::despawn_with::<Game>);
     }
 }
 

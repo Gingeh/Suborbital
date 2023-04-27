@@ -11,7 +11,7 @@ pub struct CratePlugin;
 
 impl Plugin for CratePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(update_crates.in_set(OnUpdate(AppState::Playing)));
+        app.add_systems(Update, update_crates.run_if(in_state(AppState::Playing)));
     }
 }
 

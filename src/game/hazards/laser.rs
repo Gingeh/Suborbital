@@ -16,7 +16,7 @@ pub struct LaserPlugin;
 
 impl Plugin for LaserPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(update_satilites.in_set(OnUpdate(AppState::Playing)));
+        app.add_systems(Update, update_satilites.run_if(in_state(AppState::Playing)));
     }
 }
 

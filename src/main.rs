@@ -5,9 +5,6 @@ use std::f32::consts::PI;
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
 
-use bevy_asset_loader::prelude::*;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
-
 mod game;
 mod gameover;
 mod menu;
@@ -23,64 +20,57 @@ enum AppState {
     GameOver,
 }
 
-#[derive(AssetCollection, Resource)]
+#[derive(Resource)]
 struct GameAssets {
-    #[asset(path = "ship.png")]
     spaceship: Handle<Image>,
-
-    #[asset(path = "ship-broken.png")]
     broken_spaceship: Handle<Image>,
-
-    #[asset(path = "rock.png")]
     rock_astroid: Handle<Image>,
-
-    #[asset(path = "rock-broken.png")]
     broken_rock_astroid: Handle<Image>,
-
-    #[asset(path = "ice.png")]
     ice_astroid: Handle<Image>,
-
-    #[asset(path = "background.png")]
     background: Handle<Image>,
-
-    #[asset(path = "Overpass-SemiBold.ttf")]
     font: Handle<Font>,
-
-    #[asset(path = "bevy.png")]
     bevy_logo: Handle<Image>,
-
-    #[asset(path = "logo.png")]
     game_logo: Handle<Image>,
-
-    #[asset(path = "clubbo.png")]
     clubbo: Handle<Image>,
-
-    #[asset(path = "satilite-idle.png")]
     satilite_idle: Handle<Image>,
-
-    #[asset(path = "satilite-charging.png")]
     satilite_charging: Handle<Image>,
-
-    #[asset(path = "laser.png")]
     laser: Handle<Image>,
-
-    #[asset(path = "heart.png")]
     heart: Handle<Image>,
-
-    #[asset(path = "heart-broken.png")]
     broken_heart: Handle<Image>,
-
-    #[asset(path = "health-crate.png")]
     health_crate: Handle<Image>,
+}
+
+impl FromWorld for GameAssets {
+    fn from_world(world: &mut World) -> Self {
+        let asset_server = world.get_resource_mut::<AssetServer>().unwrap();
+
+        Self {
+            spaceship: asset_server.load("ship.png"),
+            broken_spaceship: asset_server.load("ship-broken.png"),
+            rock_astroid: asset_server.load("rock.png"),
+            broken_rock_astroid: asset_server.load("rock-broken.png"),
+            ice_astroid: asset_server.load("ice.png"),
+            background: asset_server.load("background.png"),
+            font: asset_server.load("Overpass-SemiBold.ttf"),
+            bevy_logo: asset_server.load("bevy.png"),
+            game_logo: asset_server.load("logo.png"),
+            clubbo: asset_server.load("clubbo.png"),
+            satilite_idle: asset_server.load("satilite-idle.png"),
+            satilite_charging: asset_server.load("satilite-charging.png"),
+            laser: asset_server.load("laser.png"),
+            heart: asset_server.load("heart.png"),
+            broken_heart: asset_server.load("heart-broken.png"),
+            health_crate: asset_server.load("health-crate.png"),
+        }
+    }
 }
 
 #[derive(Component)]
 struct Background;
 
 fn main() {
-    let mut app = App::new();
-
-    app.insert_resource(ClearColor(Color::hex("2d1f4a").unwrap()))
+    App::new()
+        .insert_resource(ClearColor(Color::hex("2d1f4a").unwrap()))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Suborbital".to_string(),
@@ -89,19 +79,15 @@ fn main() {
                 ..default()
             }),
             ..default()
-        }));
-
-    #[cfg(debug_assertions)]
-    app.add_plugin(WorldInspectorPlugin::new());
-
-    app.add_state::<AppState>()
-        .init_collection::<GameAssets>()
+        }))
+        .add_state::<AppState>()
+        .init_resource::<GameAssets>()
         .add_plugin(splash::SplashPlugin)
         .add_plugin(menu::MenuPlugin)
         .add_plugin(game::GamePlugin)
         .add_plugin(gameover::GameOverPlugin)
-        .add_startup_system(setup)
-        .add_system(animate_background)
+        .add_systems(Startup, setup)
+        .add_systems(Update, animate_background)
         .run();
 }
 

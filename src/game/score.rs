@@ -25,10 +25,10 @@ impl Plugin for ScorePlugin {
             high_score: 0,
         })
         .add_event::<ScoreEvent>()
-        .add_system(spawn_scoreboard.in_schedule(OnExit(AppState::Splash)))
-        .add_systems((update_score, update_scoreboard))
-        .add_systems((show_score, reset_score).in_schedule(OnEnter(AppState::Playing)))
-        .add_system(hide_score.in_schedule(OnExit(AppState::Playing)));
+        .add_systems(OnExit(AppState::Splash), spawn_scoreboard)
+        .add_systems(Update, (update_score, update_scoreboard))
+        .add_systems(OnEnter(AppState::Playing), (show_score, reset_score))
+        .add_systems(OnExit(AppState::Playing), hide_score);
     }
 }
 
@@ -49,11 +49,8 @@ fn spawn_scoreboard(mut commands: Commands, assets: Res<GameAssets>) {
         .spawn(NodeBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: UiRect {
-                    left: Val::Px(10.0),
-                    bottom: Val::Px(10.0),
-                    ..default()
-                },
+                left: Val::Px(10.0),
+                bottom: Val::Px(10.0),
                 flex_direction: FlexDirection::Column,
                 ..default()
             },
