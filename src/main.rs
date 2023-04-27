@@ -36,7 +36,6 @@ struct GameAssets {
     satilite_charging: Handle<Image>,
     laser: Handle<Image>,
     heart: Handle<Image>,
-    broken_heart: Handle<Image>,
     health_crate: Handle<Image>,
 }
 
@@ -59,7 +58,6 @@ impl FromWorld for GameAssets {
             satilite_charging: asset_server.load("satilite-charging.png"),
             laser: asset_server.load("laser.png"),
             heart: asset_server.load("heart.png"),
-            broken_heart: asset_server.load("heart-broken.png"),
             health_crate: asset_server.load("health-crate.png"),
         }
     }
