@@ -23,7 +23,8 @@ impl Plugin for GameOverPlugin {
 
 fn setup_menu(mut commands: Commands, assets: Res<GameAssets>, score: Res<Score>) {
     let button_style = Style {
-        size: Size::new(Val::Px(250.0), Val::Px(65.0)),
+        width: Val::Px(250.0),
+        height: Val::Px(65.0),
         margin: UiRect::all(Val::Px(20.0)),
         justify_content: JustifyContent::Center,
         align_items: AlignItems::Center,
@@ -40,7 +41,8 @@ fn setup_menu(mut commands: Commands, assets: Res<GameAssets>, score: Res<Score>
         .spawn((
             NodeBundle {
                 style: Style {
-                    size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::Center,
                     flex_direction: FlexDirection::Column,
@@ -71,7 +73,8 @@ fn setup_menu(mut commands: Commands, assets: Res<GameAssets>, score: Res<Score>
             ]));
             parent.spawn(ImageBundle {
                 style: Style {
-                    size: Size::new(Val::Auto, Val::Px(400.0)),
+                    width: Val::Auto,
+                    height: Val::Px(400.0),
                     ..default()
                 },
                 image: UiImage::new(assets.broken_spaceship.clone()),
@@ -117,7 +120,7 @@ fn menu_action(
     mut app_state: ResMut<NextState<AppState>>,
 ) {
     for (interaction, menu_button_action) in &interaction_query {
-        if *interaction == Interaction::Clicked {
+        if *interaction == Interaction::Pressed {
             match menu_button_action {
                 GameOverButton::Retry => app_state.set(AppState::Playing),
                 GameOverButton::Menu => app_state.set(AppState::Menu),

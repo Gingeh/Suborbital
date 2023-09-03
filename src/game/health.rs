@@ -41,7 +41,9 @@ fn update_health_display(
     health_display_query: Query<Entity, With<HealthDisplay>>,
     assets: Res<GameAssets>,
 ) {
-    let Ok(health) = health_query.get_single() else { return;};
+    let Ok(health) = health_query.get_single() else {
+        return;
+    };
     let health_display = health_display_query.single();
 
     commands.entity(health_display).despawn_descendants();
@@ -49,7 +51,8 @@ fn update_health_display(
         for _ in 0..health.0 {
             parent.spawn(ImageBundle {
                 style: Style {
-                    size: Size::new(Val::Px(50.0), Val::Px(50.0)),
+                    width: Val::Px(50.0),
+                    height: Val::Px(50.0),
                     margin: UiRect::left(Val::Px(10.0)),
                     ..default()
                 },

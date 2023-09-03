@@ -23,14 +23,14 @@ struct CrateBundle {
     crate_marker: Crate,
     game_marker: Game,
     direction: Direction,
-    #[bundle]
+    #[bundle()]
     sprite: SpriteBundle,
 }
 
 pub struct SpawnCrateCommand;
 
 impl Command for SpawnCrateCommand {
-    fn write(self, world: &mut World) {
+    fn apply(self, world: &mut World) {
         let mut rng = thread_rng();
         let direction: Direction = rng.gen();
 

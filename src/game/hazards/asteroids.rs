@@ -24,7 +24,7 @@ struct AsteroidBundle {
     game_marker: Game,
     direction: Direction,
     hazard_type: HazardType,
-    #[bundle]
+    #[bundle()]
     sprite: SpriteBundle,
 }
 
@@ -34,7 +34,7 @@ pub enum SpawnAsteroidCommand {
 }
 
 impl Command for SpawnAsteroidCommand {
-    fn write(self, world: &mut World) {
+    fn apply(self, world: &mut World) {
         let mut rng = thread_rng();
         let direction: Direction = rng.gen();
 

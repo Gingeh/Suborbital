@@ -19,12 +19,14 @@ pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(spaceship::SpaceshipPlugin)
-            .add_plugin(hazards::HazardsPlugin)
-            .add_plugin(score::ScorePlugin)
-            .add_plugin(health::HealthPlugin)
-            .add_systems(Update, handle_shake)
-            .add_systems(OnExit(AppState::Playing), utils::despawn_with::<Game>);
+        app.add_plugins((
+            spaceship::SpaceshipPlugin,
+            hazards::HazardsPlugin,
+            score::ScorePlugin,
+            health::HealthPlugin,
+        ))
+        .add_systems(Update, handle_shake)
+        .add_systems(OnExit(AppState::Playing), utils::despawn_with::<Game>);
     }
 }
 

@@ -80,10 +80,12 @@ fn main() {
         }))
         .add_state::<AppState>()
         .init_resource::<GameAssets>()
-        .add_plugin(splash::SplashPlugin)
-        .add_plugin(menu::MenuPlugin)
-        .add_plugin(game::GamePlugin)
-        .add_plugin(gameover::GameOverPlugin)
+        .add_plugins((
+            splash::SplashPlugin,
+            menu::MenuPlugin,
+            game::GamePlugin,
+            gameover::GameOverPlugin,
+        ))
         .add_systems(Startup, setup)
         .add_systems(Update, animate_background)
         .run();

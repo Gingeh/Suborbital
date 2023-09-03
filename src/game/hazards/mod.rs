@@ -34,6 +34,7 @@ impl Distribution<HazardType> for Standard {
     }
 }
 
+#[derive(Event)]
 pub struct HitEvent {
     pub hazard_type: HazardType,
     pub from_direction: Direction,
@@ -46,9 +47,11 @@ impl Plugin for HazardsPlugin {
         app.insert_resource(HazardTimer(Timer::from_seconds(1.0, TimerMode::Repeating)))
             .add_event::<HitEvent>()
             .add_systems(Update, spawn_hazards.run_if(in_state(AppState::Playing)))
-            .add_plugin(asteroids::AsteroidsPlugin)
-            .add_plugin(laser::LaserPlugin)
-            .add_plugin(crates::CratePlugin);
+            .add_plugins((
+                asteroids::AsteroidsPlugin,
+                laser::LaserPlugin,
+                crates::CratePlugin,
+            ));
     }
 }
 

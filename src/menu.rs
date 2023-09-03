@@ -25,7 +25,8 @@ impl Plugin for MenuPlugin {
 
 fn setup_menu(mut commands: Commands, assets: Res<GameAssets>) {
     let button_style = Style {
-        size: Size::new(Val::Px(250.0), Val::Px(65.0)),
+        width: Val::Px(250.0),
+        height: Val::Px(65.0),
         margin: UiRect::all(Val::Px(20.0)),
         justify_content: JustifyContent::Center,
         align_items: AlignItems::Center,
@@ -42,7 +43,8 @@ fn setup_menu(mut commands: Commands, assets: Res<GameAssets>) {
         .spawn((
             NodeBundle {
                 style: Style {
-                    size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::Center,
                     flex_direction: FlexDirection::Column,
@@ -55,7 +57,8 @@ fn setup_menu(mut commands: Commands, assets: Res<GameAssets>) {
         .with_children(|parent| {
             parent.spawn(ImageBundle {
                 style: Style {
-                    size: Size::new(Val::Auto, Val::Px(300.0)),
+                    width: Val::Auto,
+                    height: Val::Px(300.0),
                     ..default()
                 },
                 image: UiImage::new(assets.game_logo.clone()),
@@ -106,7 +109,8 @@ fn setup_menu(mut commands: Commands, assets: Res<GameAssets>) {
         .with_children(|parent| {
             parent.spawn(ImageBundle {
                 style: Style {
-                    size: Size::new(Val::Px(100.0), Val::Px(100.0)),
+                    width: Val::Px(100.0),
+                    height: Val::Px(100.0),
                     ..default()
                 },
                 image: UiImage::new(assets.clubbo.clone()),
@@ -137,7 +141,7 @@ fn menu_action(
     mut app_exit_writer: EventWriter<AppExit>,
 ) {
     for (interaction, menu_button_action) in &interaction_query {
-        if *interaction == Interaction::Clicked {
+        if *interaction == Interaction::Pressed {
             match menu_button_action {
                 MenuButton::Play => app_state.set(AppState::Playing),
                 MenuButton::Quit => app_exit_writer.send(AppExit),

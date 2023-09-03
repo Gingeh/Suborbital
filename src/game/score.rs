@@ -8,6 +8,7 @@ pub struct Score {
     pub high_score: usize,
 }
 
+#[derive(Event)]
 pub struct ScoreEvent;
 
 #[derive(Component)]

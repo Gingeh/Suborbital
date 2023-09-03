@@ -29,7 +29,8 @@ fn setup_splash(mut commands: Commands, assets: Res<GameAssets>) {
         .spawn((
             NodeBundle {
                 style: Style {
-                    size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::Center,
                     flex_direction: FlexDirection::Column,
@@ -42,7 +43,8 @@ fn setup_splash(mut commands: Commands, assets: Res<GameAssets>) {
         .with_children(|parent| {
             parent.spawn(ImageBundle {
                 style: Style {
-                    size: Size::new(Val::Auto, Val::Px(200.0)),
+                    width: Val::Auto,
+                    height: Val::Px(200.0),
                     ..default()
                 },
                 image: UiImage::new(assets.bevy_logo.clone()),

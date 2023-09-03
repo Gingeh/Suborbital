@@ -22,7 +22,7 @@ struct SpaceshipBundle {
     game_marker: Game,
     direction: Direction,
     health: Health,
-    #[bundle]
+    #[bundle()]
     sprite: SpriteBundle,
 }
 
@@ -85,7 +85,7 @@ fn handle_hits(
     mut spaceships: Query<(Entity, &Direction, &mut Health), With<Spaceship>>,
     mut app_state: ResMut<NextState<AppState>>,
 ) {
-    for event in hit_event_reader.iter() {
+    for event in hit_event_reader.read() {
         let (entity, &direction, mut health) = spaceships.single_mut();
         match event.hazard_type {
             HazardType::Rock => {
