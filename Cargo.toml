@@ -5,6 +5,23 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-bevy = "0.17"
-rand = "0.9"
-webbrowser = "1"
+bevy = { version = "0.17", default-features = false, features = [
+    "bevy_log",
+    "bevy_state",
+    "bevy_ui_render",
+    "png",
+    "webgl2",
+    "x11",
+    "wayland",
+] }
+rand = { version = "0.9", default-features = false, features = ["thread_rng"] }
+webbrowser = { version = "1", default-features = false, features = [
+    "hardened",
+] }
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+opt-level = "z"
+strip = true
+panic = "abort"

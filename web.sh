@@ -52,7 +52,7 @@ case "$task" in
 zip)
 	if [ "$release" == "yes" ]; then
 		set -x
-		bevy build --release web --bundle --wasm-opt "-O2"
+		bevy build --release web --bundle --wasm-opt "-Oz"
 		(cd target/bevy_web/web-release/"$package_name"/ && zip -r - .) >"$package_name".zip
 		{ set +x; } 2>/dev/null
 	else
@@ -65,7 +65,7 @@ zip)
 serve)
 	if [ "$release" == "yes" ]; then
 		set -x
-		bevy run --release web --wasm-opt "-O2"
+		bevy run --release web --wasm-opt "-Oz"
 		{ set +x; } 2>/dev/null
 	else
 		set -x
@@ -76,7 +76,7 @@ serve)
 open)
 	if [ "$release" == "yes" ]; then
 		set -x
-		bevy run --release web --wasm-opt "-O2" --open
+		bevy run --release web --wasm-opt "-Oz" --open
 		{ set +x; } 2>/dev/null
 	else
 		set -x
