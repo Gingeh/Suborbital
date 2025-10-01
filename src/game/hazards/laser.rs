@@ -2,15 +2,10 @@ use std::time::Duration;
 
 use bevy::ecs::system::Command;
 use bevy::prelude::*;
-use rand::prelude::*;
 
-use crate::{
-    game::{Game, Shaking},
-    utils::Direction,
-    AppState, GameAssets,
-};
+use crate::{AppState, GameAssets, game::Shaking, utils::Direction};
 
-use super::{HazardType, HitEvent};
+use super::{HazardType, HitMessage};
 
 pub struct LaserPlugin;
 
@@ -21,135 +16,115 @@ impl Plugin for LaserPlugin {
 }
 
 #[derive(Component)]
-struct Satilite;
+struct Satellite;
 
 #[derive(Component)]
-enum SatiliteState {
+enum SatelliteState {
     Idle,
     Charging,
     Firing,
     Retreating,
 }
 
-#[derive(Component)]
-struct SatiliteTimer(Timer);
-
-#[derive(Bundle)]
-struct SatiliteBundle {
-    satilite_marker: Satilite,
-    game_marker: Game,
-    direction: Direction,
-    satilite_state: SatiliteState,
-    timer: SatiliteTimer,
-    #[bundle()]
-    sprite: SpriteBundle,
-}
+#[derive(Component, Deref, DerefMut)]
+struct SatelliteTimer(Timer);
 
 pub struct SpawnLaserCommand;
 
 impl Command for SpawnLaserCommand {
     fn apply(self, world: &mut World) {
-        let mut rng = thread_rng();
-        let direction: Direction = rng.gen();
+        let direction: Direction = rand::random();
 
-        world.spawn(SatiliteBundle {
-            satilite_marker: Satilite,
-            game_marker: Game,
+        world.spawn((
+            Satellite,
             direction,
-            satilite_state: SatiliteState::Idle,
-            timer: SatiliteTimer(Timer::from_seconds(1.5, TimerMode::Once)),
-            sprite: SpriteBundle {
-                texture: world
+            SatelliteState::Idle,
+            SatelliteTimer(Timer::from_seconds(1.5, TimerMode::Once)),
+            Sprite {
+                image: world
                     .get_resource::<GameAssets>()
                     .unwrap()
                     .satilite_idle
                     .clone(),
-                sprite: Sprite {
-                    custom_size: Some(Vec2 { x: 120.0, y: 120.0 }),
-                    ..default()
-                },
-                transform: Transform::from_translation(
-                    direction.to_vec3() * -500.0 + Vec3::Z * 2.0,
-                )
-                .with_rotation(direction.to_quat()),
+                custom_size: Some(Vec2 { x: 120.0, y: 120.0 }),
                 ..default()
             },
-        });
+            Transform::from_translation(direction.to_vec3() * -500.0 + Vec3::Z * 2.0)
+                .with_rotation(direction.to_quat()),
+            DespawnOnExit(AppState::Playing),
+        ));
     }
 }
 
 fn update_satilites(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(
-        &mut SatiliteTimer,
-        &mut SatiliteState,
-        &mut Handle<Image>,
+    query: Query<(
+        &mut SatelliteTimer,
+        &mut SatelliteState,
+        &mut Sprite,
         &mut Transform,
         &Direction,
         Entity,
     )>,
     assets: Res<GameAssets>,
-    mut hit_event_writer: EventWriter<HitEvent>,
+    mut hit_event_writer: MessageWriter<HitMessage>,
 ) {
-    for (mut timer, mut state, mut sprite, mut transform, &direction, entity) in query.iter_mut() {
-        timer.0.tick(time.delta());
+    for (mut timer, mut state, mut sprite, mut transform, &direction, entity) in query {
+        timer.tick(time.delta());
 
         match *state {
-            SatiliteState::Idle => {
+            SatelliteState::Idle => {
                 transform.translation = transform
                     .translation
                     .lerp(direction.to_vec3() * -320.0 + Vec3::Z, 0.1);
 
-                if timer.0.finished() {
-                    *state = SatiliteState::Charging;
-                    *sprite = assets.satilite_charging.clone();
-                    timer.0.set_duration(Duration::from_secs_f32(0.5));
-                    timer.0.reset();
+                if timer.is_finished() {
+                    *state = SatelliteState::Charging;
+                    sprite.image = assets.satilite_charging.clone();
+                    timer.set_duration(Duration::from_secs_f32(0.5));
+                    timer.reset();
                     commands
                         .entity(entity)
                         .insert(Shaking(Timer::from_seconds(1.0, TimerMode::Once)));
                 }
             }
-            SatiliteState::Charging => {
-                if timer.0.finished() {
-                    *state = SatiliteState::Firing;
-                    timer.0.set_duration(Duration::from_secs_f32(0.5));
-                    timer.0.reset();
+            SatelliteState::Charging => {
+                if timer.is_finished() {
+                    *state = SatelliteState::Firing;
+                    timer.set_duration(Duration::from_secs_f32(0.5));
+                    timer.reset();
 
-                    commands.entity(entity).with_children(|parent| {
-                        parent.spawn(SpriteBundle {
-                            texture: assets.laser.clone(),
-                            sprite: Sprite {
-                                custom_size: Some(Vec2 { x: 20.0, y: 300.0 }),
-                                ..default()
-                            },
-                            transform: Transform::from_translation(Vec3::new(0.0, 200.0, -1.0)),
+                    commands.entity(entity).with_child((
+                        Sprite {
+                            image: assets.laser.clone(),
+                            custom_size: Some(Vec2 { x: 20.0, y: 300.0 }),
                             ..default()
-                        });
-                    });
+                        },
+                        Transform::from_translation(Vec3::new(0.0, 200.0, -1.0)),
+                    ));
 
-                    hit_event_writer.send(HitEvent {
+                    hit_event_writer.write(HitMessage {
                         from_direction: direction,
                         hazard_type: HazardType::Laser,
                     });
                 }
             }
-            SatiliteState::Firing => {
-                if timer.0.finished() {
-                    *state = SatiliteState::Retreating;
-                    *sprite = assets.satilite_idle.clone();
-                    timer.0.set_duration(Duration::from_secs_f32(1.0));
-                    timer.0.reset();
-                    commands.entity(entity).despawn_descendants();
+            SatelliteState::Firing => {
+                if timer.is_finished() {
+                    *state = SatelliteState::Retreating;
+                    sprite.image = assets.satilite_idle.clone();
+                    timer.set_duration(Duration::from_secs_f32(1.0));
+                    timer.reset();
+                    commands.entity(entity).despawn();
                 }
             }
-            SatiliteState::Retreating => {
+            SatelliteState::Retreating => {
                 transform.translation = transform
                     .translation
                     .lerp(direction.to_vec3() * -500.0 + Vec3::Z, 0.1);
 
-                if timer.0.finished() {
+                if timer.is_finished() {
                     commands.entity(entity).despawn();
                 }
             }

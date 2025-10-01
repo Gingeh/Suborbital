@@ -1,12 +1,49 @@
 use std::f32::consts::PI;
 
 use bevy::prelude::*;
-use rand::{distributions::Standard, prelude::Distribution, Rng};
+use rand::{Rng, distr::StandardUniform, prelude::Distribution};
 
-pub fn despawn_with<T: Component>(to_despawn: Query<Entity, With<T>>, mut commands: Commands) {
-    for entity in &to_despawn {
-        commands.entity(entity).despawn_recursive();
-    }
+use crate::GameAssets;
+
+pub fn button(text: impl Into<String>, assets: &GameAssets) -> impl Bundle {
+    (
+        Button,
+        Node {
+            width: px(250),
+            height: px(65),
+            margin: px(20).all(),
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            border: px(4).all(),
+            ..default()
+        },
+        BackgroundColor(Color::WHITE),
+        BorderColor::all(Color::BLACK),
+        children![(
+            Text::new(text),
+            TextFont {
+                font: assets.font.clone(),
+                font_size: 40.0,
+                ..default()
+            },
+            TextColor(Color::BLACK),
+        )],
+    )
+}
+
+pub fn text_style(assets: &GameAssets, font_size: f32) -> impl Bundle {
+    (
+        TextFont {
+            font: assets.font.clone(),
+            font_size,
+            ..default()
+        },
+        TextColor(Color::WHITE),
+        TextShadow {
+            color: Color::BLACK,
+            offset: Vec2::new(4.0, 4.0),
+        },
+    )
 }
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
@@ -17,9 +54,9 @@ pub enum Direction {
     Right,
 }
 
-impl Distribution<Direction> for Standard {
+impl Distribution<Direction> for StandardUniform {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Direction {
-        match rng.gen_range(0..4) {
+        match rng.random_range(0..4) {
             0 => Direction::Up,
             1 => Direction::Left,
             2 => Direction::Down,

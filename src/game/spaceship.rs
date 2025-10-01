@@ -2,29 +2,16 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use crate::{utils::Direction, AppState, GameAssets};
+use crate::{AppState, GameAssets, game::health::Health, utils::Direction};
 
 use super::{
-    hazards::{HazardType, HitEvent},
-    score::ScoreEvent,
-    Game, Shaking,
+    Shaking,
+    hazards::{HazardType, HitMessage},
+    score::ScoreMessage,
 };
 
 #[derive(Component)]
 pub struct Spaceship;
-
-#[derive(Component)]
-pub struct Health(pub u32);
-
-#[derive(Bundle)]
-struct SpaceshipBundle {
-    spaceship_marker: Spaceship,
-    game_marker: Game,
-    direction: Direction,
-    health: Health,
-    #[bundle()]
-    sprite: SpriteBundle,
-}
 
 pub struct SpaceshipPlugin;
 
@@ -40,100 +27,83 @@ impl Plugin for SpaceshipPlugin {
 }
 
 fn spawn_spaceship(mut commands: Commands, assets: Res<GameAssets>) {
-    commands.spawn(SpaceshipBundle {
-        spaceship_marker: Spaceship,
-        game_marker: Game,
-        direction: Direction::Up,
-        health: Health(3),
-        sprite: SpriteBundle {
-            texture: assets.spaceship.clone(),
-            sprite: Sprite {
-                custom_size: Some(Vec2 { x: 220.0, y: 220.0 }),
-                ..default()
-            },
-            transform: Transform::from_xyz(0.0, 0.0, 2.0),
+    commands.spawn((
+        Spaceship,
+        Direction::Up,
+        Sprite {
+            image: assets.spaceship.clone(),
+            custom_size: Some(Vec2 { x: 220.0, y: 220.0 }),
             ..default()
         },
-    });
+        Transform::from_xyz(0.0, 0.0, 2.0),
+        DespawnOnExit(AppState::Playing),
+    ));
 }
 
 fn update_direction(
-    input: Res<Input<KeyCode>>,
-    mut directions: Query<&mut Direction, With<Spaceship>>,
+    input: Res<ButtonInput<KeyCode>>,
+    mut ship_direction: Single<&mut Direction, With<Spaceship>>,
 ) {
-    if input.any_just_pressed([KeyCode::A, KeyCode::Left]) {
-        for mut direction in directions.iter_mut() {
-            *direction = direction.rotate_ccw();
-        }
-    } else if input.any_just_pressed([KeyCode::D, KeyCode::Right]) {
-        for mut direction in directions.iter_mut() {
-            *direction = direction.rotate_cw();
-        }
-    };
+    if input.any_just_pressed([KeyCode::KeyA, KeyCode::ArrowLeft]) {
+        **ship_direction = ship_direction.rotate_ccw();
+    } else if input.any_just_pressed([KeyCode::KeyD, KeyCode::ArrowRight]) {
+        **ship_direction = ship_direction.rotate_cw();
+    }
 }
 
-fn apply_direction(mut spaceships: Query<(&Direction, &mut Transform), With<Spaceship>>) {
-    let (&direction, mut transform) = spaceships.single_mut();
+fn apply_direction(spaceship: Single<(&Direction, &mut Transform), With<Spaceship>>) {
+    let (direction, mut transform) = spaceship.into_inner();
     let target_quat = direction.to_quat();
     transform.rotation = transform.rotation.slerp(target_quat, 0.3);
 }
 
 fn handle_hits(
     mut commands: Commands,
-    mut hit_event_reader: EventReader<HitEvent>,
-    mut score_event_witer: EventWriter<ScoreEvent>,
-    mut spaceships: Query<(Entity, &Direction, &mut Health), With<Spaceship>>,
+    mut hit_reader: MessageReader<HitMessage>,
+    mut score_writer: MessageWriter<ScoreMessage>,
+    spaceship: Single<(Entity, &Direction), With<Spaceship>>,
+    mut health: ResMut<Health>,
     mut app_state: ResMut<NextState<AppState>>,
 ) {
-    for event in hit_event_reader.read() {
-        let (entity, &direction, mut health) = spaceships.single_mut();
+    let shake_for_ms = |millis| Shaking(Timer::new(Duration::from_millis(millis), TimerMode::Once));
+
+    let (entity, &direction) = spaceship.into_inner();
+    for event in hit_reader.read() {
         match event.hazard_type {
             HazardType::Rock => {
                 if event.from_direction == direction.rotate_ccw() {
-                    score_event_witer.send(ScoreEvent);
+                    score_writer.write(ScoreMessage);
                 } else {
-                    health.0 -= 1;
-                    commands.entity(entity).insert(Shaking(Timer::new(
-                        Duration::from_millis(100),
-                        TimerMode::Once,
-                    )));
+                    **health -= 1;
+                    commands.entity(entity).insert(shake_for_ms(100));
                 }
             }
             HazardType::Ice => {
                 if event.from_direction == direction {
-                    score_event_witer.send(ScoreEvent);
+                    score_writer.write(ScoreMessage);
                 } else {
-                    health.0 -= 1;
-                    commands.entity(entity).insert(Shaking(Timer::new(
-                        Duration::from_millis(100),
-                        TimerMode::Once,
-                    )));
+                    **health -= 1;
+                    commands.entity(entity).insert(shake_for_ms(100));
                 }
             }
             HazardType::Laser => {
                 if event.from_direction == direction.rotate_cw() {
-                    score_event_witer.send(ScoreEvent);
+                    score_writer.write(ScoreMessage);
                 } else {
-                    health.0 -= 1;
-                    commands.entity(entity).insert(Shaking(Timer::new(
-                        Duration::from_millis(100),
-                        TimerMode::Once,
-                    )));
+                    **health -= 1;
+                    commands.entity(entity).insert(shake_for_ms(100));
                 }
             }
             HazardType::Crate => {
                 if event.from_direction == direction.rotate_cw().rotate_cw() {
-                    health.0 += 1;
-                    score_event_witer.send(ScoreEvent);
-                    commands.entity(entity).insert(Shaking(Timer::new(
-                        Duration::from_millis(200),
-                        TimerMode::Once,
-                    )));
+                    **health += 1;
+                    score_writer.write(ScoreMessage);
+                    commands.entity(entity).insert(shake_for_ms(200));
                 }
             }
         }
 
-        if health.0 == 0 {
+        if **health == 0 {
             app_state.set(AppState::GameOver);
         }
     }

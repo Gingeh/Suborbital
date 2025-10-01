@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{AppState, GameAssets};
+use crate::{AppState, GameAssets, utils::text_style};
 
 #[derive(Resource)]
 pub struct Score {
@@ -8,14 +8,17 @@ pub struct Score {
     pub high_score: usize,
 }
 
-#[derive(Event)]
-pub struct ScoreEvent;
+#[derive(Message)]
+pub struct ScoreMessage;
 
 #[derive(Component)]
 struct ScoreDisplay;
 
 #[derive(Component)]
-struct HighScoreDisplay;
+struct ScoreSpan;
+
+#[derive(Component)]
+struct HighScoreSpan;
 
 pub struct ScorePlugin;
 
@@ -25,15 +28,21 @@ impl Plugin for ScorePlugin {
             score: 0,
             high_score: 0,
         })
-        .add_event::<ScoreEvent>()
+        .add_message::<ScoreMessage>()
         .add_systems(OnExit(AppState::Splash), spawn_scoreboard)
-        .add_systems(Update, (update_score, update_scoreboard))
+        .add_systems(
+            Update,
+            (
+                update_score,
+                update_scoreboard.run_if(resource_changed::<Score>),
+            ),
+        )
         .add_systems(OnEnter(AppState::Playing), (show_score, reset_score))
         .add_systems(OnExit(AppState::Playing), hide_score);
     }
 }
 
-fn update_score(mut score: ResMut<Score>, mut score_events: EventReader<ScoreEvent>) {
+fn update_score(mut score: ResMut<Score>, mut score_events: MessageReader<ScoreMessage>) {
     score.score += score_events.len();
     if score.score > score.high_score {
         score.high_score = score.score;
@@ -46,88 +55,51 @@ fn reset_score(mut score: ResMut<Score>) {
 }
 
 fn spawn_scoreboard(mut commands: Commands, assets: Res<GameAssets>) {
-    commands
-        .spawn(NodeBundle {
-            style: Style {
-                position_type: PositionType::Absolute,
-                left: Val::Px(10.0),
-                bottom: Val::Px(10.0),
-                flex_direction: FlexDirection::Column,
-                ..default()
-            },
+    commands.spawn((
+        Node {
+            position_type: PositionType::Absolute,
+            left: px(10),
+            bottom: px(10),
+            flex_direction: FlexDirection::Column,
             ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn((
-                TextBundle::from_sections(vec![
-                    TextSection {
-                        value: "Score: ".to_string(),
-                        style: TextStyle {
-                            font: assets.font.clone(),
-                            font_size: 40.0,
-                            color: Color::WHITE,
-                        },
-                    },
-                    TextSection {
-                        value: String::new(),
-                        style: TextStyle {
-                            font: assets.font.clone(),
-                            font_size: 40.0,
-                            color: Color::WHITE,
-                        },
-                    },
-                ])
-                .with_style(Style {
+        },
+        children![
+            (
+                ScoreDisplay,
+                Text::new("Score: "),
+                text_style(&*assets, 40.0),
+                Node {
                     display: Display::None,
                     ..default()
-                }),
-                ScoreDisplay,
-            ));
-            parent.spawn((
-                TextBundle::from_sections(vec![
-                    TextSection {
-                        value: "High Score: ".to_string(),
-                        style: TextStyle {
-                            font: assets.font.clone(),
-                            font_size: 40.0,
-                            color: Color::WHITE,
-                        },
-                    },
-                    TextSection {
-                        value: String::new(),
-                        style: TextStyle {
-                            font: assets.font.clone(),
-                            font_size: 40.0,
-                            color: Color::WHITE,
-                        },
-                    },
-                ]),
-                HighScoreDisplay,
-            ));
-        });
+                },
+                children![(ScoreSpan, TextSpan::default(), text_style(&*assets, 40.0))],
+            ),
+            (
+                Text::new("High Score: "),
+                text_style(&*assets, 40.0),
+                children![(
+                    HighScoreSpan,
+                    TextSpan::default(),
+                    text_style(&*assets, 40.0)
+                )],
+            )
+        ],
+    ));
 }
 
 fn update_scoreboard(
-    score: ResMut<Score>,
-    mut score_text: Query<&mut Text, (With<ScoreDisplay>, Without<HighScoreDisplay>)>,
-    mut high_score_text: Query<&mut Text, (With<HighScoreDisplay>, Without<ScoreDisplay>)>,
+    score: Res<Score>,
+    mut score_text: Single<&mut TextSpan, (With<ScoreSpan>, Without<HighScoreSpan>)>,
+    mut high_score_text: Single<&mut TextSpan, (With<HighScoreSpan>, Without<ScoreSpan>)>,
 ) {
-    for mut text in score_text.iter_mut() {
-        text.sections[1].value = score.score.to_string();
-    }
-    for mut text in high_score_text.iter_mut() {
-        text.sections[1].value = score.high_score.to_string();
-    }
+    ***score_text = score.score.to_string();
+    ***high_score_text = score.high_score.to_string();
 }
 
-fn show_score(mut score: Query<&mut Style, With<ScoreDisplay>>) {
-    for mut style in score.iter_mut() {
-        style.display = Display::Flex;
-    }
+fn show_score(mut score_display: Single<&mut Node, With<ScoreDisplay>>) {
+    score_display.display = Display::Flex;
 }
 
-fn hide_score(mut score: Query<&mut Style, With<ScoreDisplay>>) {
-    for mut style in score.iter_mut() {
-        style.display = Display::None;
-    }
+fn hide_score(mut score_display: Single<&mut Node, With<ScoreDisplay>>) {
+    score_display.display = Display::None;
 }

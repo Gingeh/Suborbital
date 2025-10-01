@@ -3,7 +3,7 @@
 use std::f32::consts::PI;
 
 use bevy::prelude::*;
-use bevy::window::WindowResolution;
+use bevy::{asset::AssetMetaCheck, window::WindowResolution};
 
 mod game;
 mod gameover;
@@ -68,17 +68,24 @@ struct Background;
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::hex("2d1f4a").unwrap()))
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Suborbital".to_string(),
-                resolution: WindowResolution::new(800.0, 800.0),
-                resizable: false,
-                ..default()
-            }),
-            ..default()
-        }))
-        .add_state::<AppState>()
+        .insert_resource(ClearColor(Srgba::rgb_u8(0x2d, 0x1f, 0x4a).into()))
+        .add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "Suborbital".to_string(),
+                        resolution: WindowResolution::new(800, 800),
+                        resizable: false,
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .set(AssetPlugin {
+                    meta_check: AssetMetaCheck::Never,
+                    ..default()
+                }),
+        )
+        .init_state::<AppState>()
         .init_resource::<GameAssets>()
         .add_plugins((
             splash::SplashPlugin,
@@ -92,18 +99,13 @@ fn main() {
 }
 
 fn setup(mut commands: Commands, assets: Res<GameAssets>) {
-    commands.spawn(Camera2dBundle::default());
-    commands.spawn((
-        SpriteBundle {
-            texture: assets.background.clone(),
-            transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
-            ..default()
-        },
-        Background,
-    ));
+    commands.spawn(Camera2d);
+    commands.spawn((Background, Sprite::from_image(assets.background.clone())));
 }
 
-fn animate_background(mut background: Query<&mut Transform, With<Background>>, time: Res<Time>) {
-    let mut transform = background.single_mut();
-    transform.translation.x = (time.elapsed_seconds() * PI / 60.0).cos() * 693.0;
+fn animate_background(
+    mut background_transform: Single<&mut Transform, With<Background>>,
+    time: Res<Time>,
+) {
+    background_transform.translation.x = (time.elapsed_secs() * PI / 60.0).cos() * 693.0;
 }

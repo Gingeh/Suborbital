@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 
-use crate::{game::score::Score, utils, AppState, GameAssets};
-
-#[derive(Component)]
-struct GameOver;
+use crate::{
+    AppState, GameAssets,
+    game::score::Score,
+    utils::{button, text_style},
+};
 
 #[derive(Component)]
 enum GameOverButton {
@@ -16,103 +17,41 @@ pub struct GameOverPlugin;
 impl Plugin for GameOverPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(AppState::GameOver), setup_menu)
-            .add_systems(Update, menu_action.run_if(in_state(AppState::GameOver)))
-            .add_systems(OnExit(AppState::GameOver), utils::despawn_with::<GameOver>);
+            .add_systems(Update, menu_action.run_if(in_state(AppState::GameOver)));
     }
 }
 
 fn setup_menu(mut commands: Commands, assets: Res<GameAssets>, score: Res<Score>) {
-    let button_style = Style {
-        width: Val::Px(250.0),
-        height: Val::Px(65.0),
-        margin: UiRect::all(Val::Px(20.0)),
-        justify_content: JustifyContent::Center,
-        align_items: AlignItems::Center,
-        ..default()
-    };
-
-    let text_style = TextStyle {
-        font: assets.font.clone(),
-        font_size: 40.0,
-        color: Color::BLACK,
-    };
-
-    commands
-        .spawn((
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
-                    flex_direction: FlexDirection::Column,
+    commands.spawn((
+        DespawnOnExit(AppState::GameOver),
+        Node {
+            width: percent(100),
+            height: percent(100),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        children![
+            (
+                Text::new(format!("Score: {}", score.score)),
+                text_style(&*assets, 60.0),
+            ),
+            (
+                ImageNode {
+                    image: assets.broken_spaceship.clone(),
                     ..default()
                 },
-                ..default()
-            },
-            GameOver,
-        ))
-        .with_children(|parent| {
-            parent.spawn(TextBundle::from_sections(vec![
-                TextSection {
-                    value: "Score: ".to_string(),
-                    style: TextStyle {
-                        font: assets.font.clone(),
-                        font_size: 60.0,
-                        color: Color::WHITE,
-                    },
-                },
-                TextSection {
-                    value: score.score.to_string(),
-                    style: TextStyle {
-                        font: assets.font.clone(),
-                        font_size: 60.0,
-                        color: Color::WHITE,
-                    },
-                },
-            ]));
-            parent.spawn(ImageBundle {
-                style: Style {
-                    width: Val::Auto,
-                    height: Val::Px(400.0),
+                Node {
+                    width: auto(),
+                    height: px(400),
                     ..default()
                 },
-                image: UiImage::new(assets.broken_spaceship.clone()),
-                ..default()
-            });
-            parent
-                .spawn(NodeBundle {
-                    style: Style { ..default() },
-                    ..default()
-                })
-                .with_children(|parent| {
-                    parent
-                        .spawn((
-                            ButtonBundle {
-                                style: button_style.clone(),
-                                ..default()
-                            },
-                            GameOverButton::Retry,
-                        ))
-                        .with_children(|parent| {
-                            parent.spawn(TextBundle::from_section("Retry", text_style.clone()));
-                        });
-                    parent
-                        .spawn((
-                            ButtonBundle {
-                                style: button_style.clone(),
-                                ..default()
-                            },
-                            GameOverButton::Menu,
-                        ))
-                        .with_children(|parent| {
-                            parent.spawn(TextBundle::from_section(
-                                "Back to title",
-                                text_style.clone(),
-                            ));
-                        });
-                });
-        });
+            ),
+            (button("Retry", &*assets), GameOverButton::Retry),
+            (button("Back to title", &*assets), GameOverButton::Menu),
+        ],
+    ));
 }
 
 fn menu_action(

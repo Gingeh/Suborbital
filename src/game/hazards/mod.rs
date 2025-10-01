@@ -1,10 +1,10 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use rand::distributions::Standard;
+use rand::distr::StandardUniform;
 use rand::prelude::*;
 
-use crate::{utils::Direction, AppState};
+use crate::{AppState, utils::Direction};
 
 use super::score::Score;
 
@@ -23,9 +23,9 @@ pub enum HazardType {
     Crate,
 }
 
-impl Distribution<HazardType> for Standard {
+impl Distribution<HazardType> for StandardUniform {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> HazardType {
-        match rng.gen_range(0..10) {
+        match rng.random_range(0..10) {
             0..=3 => HazardType::Rock,  // 4/10 chance
             4..=6 => HazardType::Ice,   // 3/10 chance
             7..=8 => HazardType::Laser, // 2/10 chance
@@ -34,8 +34,8 @@ impl Distribution<HazardType> for Standard {
     }
 }
 
-#[derive(Event)]
-pub struct HitEvent {
+#[derive(Message)]
+pub struct HitMessage {
     pub hazard_type: HazardType,
     pub from_direction: Direction,
 }
@@ -45,7 +45,7 @@ pub struct HazardsPlugin;
 impl Plugin for HazardsPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(HazardTimer(Timer::from_seconds(1.0, TimerMode::Repeating)))
-            .add_event::<HitEvent>()
+            .add_message::<HitMessage>()
             .add_systems(Update, spawn_hazards.run_if(in_state(AppState::Playing)))
             .add_plugins((
                 asteroids::AsteroidsPlugin,
@@ -68,14 +68,12 @@ fn spawn_hazards(
     timer.set_duration(Duration::from_secs_f32(
         15.0 / (score.score as f32 + 10.0) + 0.5,
     ));
-
-    let mut rng = thread_rng();
-    let hazard_type: HazardType = rng.gen();
+    let hazard_type: HazardType = rand::random();
 
     match hazard_type {
-        HazardType::Rock => commands.add(asteroids::SpawnAsteroidCommand::Rock),
-        HazardType::Ice => commands.add(asteroids::SpawnAsteroidCommand::Ice),
-        HazardType::Laser => commands.add(laser::SpawnLaserCommand),
-        HazardType::Crate => commands.add(crates::SpawnCrateCommand),
-    };
+        HazardType::Rock => commands.queue(asteroids::SpawnAsteroidCommand::Rock),
+        HazardType::Ice => commands.queue(asteroids::SpawnAsteroidCommand::Ice),
+        HazardType::Laser => commands.queue(laser::SpawnLaserCommand),
+        HazardType::Crate => commands.queue(crates::SpawnCrateCommand),
+    }
 }

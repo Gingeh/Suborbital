@@ -2,7 +2,8 @@ use bevy::prelude::*;
 
 use crate::{AppState, GameAssets};
 
-use super::{spaceship::Health, Game};
+#[derive(Resource, Deref, DerefMut)]
+pub struct Health(pub u32);
 
 #[derive(Component)]
 struct HealthDisplay;
@@ -11,54 +12,54 @@ pub struct HealthPlugin;
 
 impl Plugin for HealthPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::Playing), spawn_health_display)
+        app.insert_resource(Health(3))
+            .add_systems(
+                OnEnter(AppState::Playing),
+                (spawn_health_display, update_health_display).chain(),
+            )
             .add_systems(
                 Update,
-                update_health_display.run_if(in_state(AppState::Playing)),
+                update_health_display
+                    .run_if(in_state(AppState::Playing))
+                    .run_if(resource_changed::<Health>),
             );
     }
 }
 
 fn spawn_health_display(mut commands: Commands) {
     commands.spawn((
-        NodeBundle {
-            style: Style {
-                position_type: PositionType::Absolute,
-                right: Val::Px(10.0),
-                bottom: Val::Px(10.0),
-                ..default()
-            },
+        Node {
+            position_type: PositionType::Absolute,
+            right: px(10),
+            bottom: px(10),
             ..default()
         },
         HealthDisplay,
-        Game,
+        DespawnOnExit(AppState::Playing),
     ));
 }
 
 fn update_health_display(
     mut commands: Commands,
-    health_query: Query<&Health, Changed<Health>>,
-    health_display_query: Query<Entity, With<HealthDisplay>>,
+    health: Res<Health>,
+    health_display: Single<Entity, With<HealthDisplay>>,
     assets: Res<GameAssets>,
 ) {
-    let Ok(health) = health_query.get_single() else {
-        return;
-    };
-    let health_display = health_display_query.single();
-
-    commands.entity(health_display).despawn_descendants();
-    commands.entity(health_display).with_children(|parent| {
-        for _ in 0..health.0 {
-            parent.spawn(ImageBundle {
-                style: Style {
-                    width: Val::Px(50.0),
-                    height: Val::Px(50.0),
-                    margin: UiRect::left(Val::Px(10.0)),
+    commands.entity(*health_display).despawn_children();
+    commands.entity(*health_display).with_children(|parent| {
+        for _ in 0..**health {
+            parent.spawn((
+                ImageNode {
+                    image: assets.heart.clone(),
                     ..default()
                 },
-                image: UiImage::new(assets.heart.clone()),
-                ..default()
-            });
+                Node {
+                    width: px(50),
+                    height: px(50),
+                    margin: px(10).left(),
+                    ..default()
+                },
+            ));
         }
     });
 }

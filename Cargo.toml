@@ -1,10 +1,10 @@
 [package]
 name = "suborbital"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-bevy = "0.12"
-rand = "0.8"
-webbrowser = "0.8"
+bevy = "0.17"
+rand = "0.9"
+webbrowser = "1"

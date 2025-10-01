@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{utils, AppState, GameAssets};
-
-#[derive(Component)]
-struct SplashScreen;
+use crate::{AppState, GameAssets, utils::text_style};
 
 #[derive(Resource, Deref, DerefMut)]
 struct SplashTimer(Timer);
@@ -16,49 +13,36 @@ impl Plugin for SplashPlugin {
             .add_systems(
                 Update,
                 countdown_splash_timer.run_if(in_state(AppState::Splash)),
-            )
-            .add_systems(
-                OnExit(AppState::Splash),
-                utils::despawn_with::<SplashScreen>,
             );
     }
 }
 
 fn setup_splash(mut commands: Commands, assets: Res<GameAssets>) {
-    commands
-        .spawn((
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
-                    flex_direction: FlexDirection::Column,
+    commands.spawn((
+        DespawnOnExit(AppState::Splash),
+        Node {
+            width: percent(100),
+            height: percent(100),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        children![
+            (
+                ImageNode {
+                    image: assets.bevy_logo.clone(),
                     ..default()
                 },
-                ..default()
-            },
-            SplashScreen,
-        ))
-        .with_children(|parent| {
-            parent.spawn(ImageBundle {
-                style: Style {
-                    width: Val::Auto,
-                    height: Val::Px(200.0),
+                Node {
+                    width: auto(),
+                    height: px(200),
                     ..default()
                 },
-                image: UiImage::new(assets.bevy_logo.clone()),
-                ..default()
-            });
-            parent.spawn(TextBundle::from_section(
-                "Made with Bevy",
-                TextStyle {
-                    font: assets.font.clone(),
-                    font_size: 40.0,
-                    color: Color::WHITE,
-                },
-            ));
-        });
+            ),
+            (Text::new("Made with Bevy"), text_style(&*assets, 40.0))
+        ],
+    ));
 
     commands.insert_resource(SplashTimer(Timer::from_seconds(2.0, TimerMode::Once)));
 }
@@ -68,7 +52,7 @@ fn countdown_splash_timer(
     time: Res<Time>,
     mut timer: ResMut<SplashTimer>,
 ) {
-    if timer.tick(time.delta()).finished() {
+    if timer.tick(time.delta()).is_finished() {
         game_state.set(AppState::Menu);
     }
 }

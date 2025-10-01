@@ -2,17 +2,12 @@ use std::f32::consts::PI;
 
 use bevy::prelude::*;
 
-use crate::{utils, AppState};
-
 pub mod hazards;
 pub mod health;
 pub mod score;
 pub mod spaceship;
 
-#[derive(Component)]
-struct Game;
-
-#[derive(Component)]
+#[derive(Component, Deref, DerefMut)]
 struct Shaking(Timer);
 
 pub struct GamePlugin;
@@ -25,22 +20,21 @@ impl Plugin for GamePlugin {
             score::ScorePlugin,
             health::HealthPlugin,
         ))
-        .add_systems(Update, handle_shake)
-        .add_systems(OnExit(AppState::Playing), utils::despawn_with::<Game>);
+        .add_systems(Update, handle_shake);
     }
 }
 
 fn handle_shake(
     mut commands: Commands,
-    mut query: Query<(Entity, &mut Transform, &mut Shaking)>,
+    query: Query<(Entity, &mut Transform, &mut Shaking)>,
     time: Res<Time>,
 ) {
-    for (entity, mut transform, mut shaking) in query.iter_mut() {
-        shaking.0.tick(time.delta());
-        if shaking.0.just_finished() && shaking.0.mode() == TimerMode::Once {
-            commands.entity(entity).remove::<Shaking>();
+    for (entity, mut transform, mut shaking) in query {
+        shaking.tick(time.delta());
+        if shaking.just_finished() && shaking.mode() == TimerMode::Once {
+            commands.entity(entity).try_remove::<Shaking>();
         } else {
-            let progress = shaking.0.percent();
+            let progress = shaking.fraction();
             transform.scale = Vec3::splat(f32::sin(progress * 2.0 * PI).mul_add(0.1, 1.0));
         }
     }
