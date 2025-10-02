@@ -1,8 +1,6 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use rand::distr::StandardUniform;
-use rand::prelude::*;
 use rand::{Rng, TryRngCore, rngs::OsRng};
 
 use crate::{
@@ -16,7 +14,6 @@ use crate::{
         health::Health,
         score::Score,
     },
-    utils::Direction,
 };
 
 mod asteroids;
@@ -25,31 +22,6 @@ mod satellite;
 
 #[derive(Resource, Deref, DerefMut)]
 struct HazardTimer(Timer);
-
-#[derive(Component, PartialEq, Eq, Clone, Copy)]
-pub enum HazardType {
-    Rock,
-    Ice,
-    Satellite,
-    Crate,
-}
-
-impl Distribution<HazardType> for StandardUniform {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> HazardType {
-        match rng.random_range(0..10) {
-            0..=3 => HazardType::Rock,      // 4/10 chance
-            4..=6 => HazardType::Ice,       // 3/10 chance
-            7..=7 => HazardType::Satellite, // 1/10 chance
-            _ => HazardType::Crate,         // 2/10 chance
-        }
-    }
-}
-
-#[derive(Event)]
-pub struct HitEvent {
-    pub hazard_type: HazardType,
-    pub from_direction: Direction,
-}
 
 pub struct HazardsPlugin;
 

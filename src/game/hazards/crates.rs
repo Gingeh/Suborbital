@@ -4,8 +4,8 @@ use rand::{Rng, TryRngCore, rngs::OsRng};
 
 use crate::{
     AppState, GameAssets,
-    game::hazards::{HazardType, HitEvent},
-    utils::Direction,
+    game::{health::Health, spaceship::Spaceship},
+    utils::{Direction, shake_for_ms},
 };
 
 pub struct CratePlugin;
@@ -44,17 +44,20 @@ fn update_crates(
     mut commands: Commands,
     crates: Query<(Entity, &Direction, &mut Transform), With<Crate>>,
     time: Res<Time>,
+    spaceship: Single<(Entity, &Direction), With<Spaceship>>,
+    mut health: ResMut<Health>,
 ) {
+    let (ship_entity, &ship_direction) = spaceship.into_inner();
     for (entity, &direction, mut transform) in crates {
         transform.translation += direction.to_vec3() * time.delta_secs() * 200.0;
         transform.rotation *= Quat::from_rotation_z(time.delta_secs() * 2.0);
 
         if transform.translation.length() <= 70.0 {
             commands.entity(entity).despawn();
-            commands.trigger(HitEvent {
-                hazard_type: HazardType::Crate,
-                from_direction: direction,
-            });
+            if direction == ship_direction.rotate_cw().rotate_cw() {
+                **health += 1;
+                commands.entity(ship_entity).insert(shake_for_ms(200));
+            }
         }
     }
 }

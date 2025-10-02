@@ -8,7 +8,7 @@ pub mod score;
 pub mod spaceship;
 
 #[derive(Component, Deref, DerefMut)]
-struct Shaking(Timer);
+pub struct Shaking(pub Timer);
 
 pub struct GamePlugin;
 

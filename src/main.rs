@@ -11,9 +11,8 @@ mod menu;
 mod splash;
 mod utils;
 
-#[derive(States, Default, Debug, Hash, PartialEq, Eq, Clone, Copy)]
+#[derive(States, Debug, Hash, PartialEq, Eq, Clone, Copy)]
 enum AppState {
-    #[default]
     Splash,
     Menu,
     Playing,
@@ -85,7 +84,7 @@ fn main() {
                     ..default()
                 }),
         )
-        .init_state::<AppState>()
+        .insert_state(AppState::Splash)
         .init_resource::<GameAssets>()
         .add_plugins((
             splash::SplashPlugin,

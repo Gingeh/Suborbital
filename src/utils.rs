@@ -1,9 +1,9 @@
-use std::f32::consts::TAU;
+use std::{f32::consts::TAU, time::Duration};
 
 use bevy::prelude::*;
 use rand::{Rng, distr::StandardUniform, prelude::Distribution};
 
-use crate::GameAssets;
+use crate::{GameAssets, game::Shaking};
 
 pub fn button(text: impl Into<String>, assets: &GameAssets) -> impl Bundle {
     (
@@ -44,6 +44,10 @@ pub fn text_style(font_size: f32, assets: &GameAssets) -> impl Bundle {
             offset: Vec2::new(4.0, 4.0),
         },
     )
+}
+
+pub fn shake_for_ms(millis: u64) -> Shaking {
+    Shaking(Timer::new(Duration::from_millis(millis), TimerMode::Once))
 }
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]

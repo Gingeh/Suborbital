@@ -4,8 +4,8 @@ use rand::{Rng, TryRngCore, rngs::OsRng};
 
 use crate::{
     AppState, GameAssets,
-    game::hazards::{HazardType, HitEvent},
-    utils::Direction,
+    game::{health::Health, score::ScoreEvent, spaceship::Spaceship},
+    utils::{Direction, shake_for_ms},
 };
 
 pub struct AsteroidsPlugin;
@@ -56,18 +56,24 @@ fn update_asteroids(
     assets: Res<GameAssets>,
     asteroids: Query<(Entity, &Direction, &Asteroid, &mut Transform, &mut Sprite)>,
     time: Res<Time>,
+    spaceship: Single<(Entity, &Direction), With<Spaceship>>,
+    mut health: ResMut<Health>,
 ) {
+    let (ship_entity, &ship_direction) = spaceship.into_inner();
     for (entity, &direction, &asteroid_type, mut transform, mut sprite) in asteroids {
         transform.translation += direction.to_vec3() * time.delta_secs() * 200.0;
         if transform.translation.length() <= 70.0 {
             commands.entity(entity).despawn();
-            commands.trigger(HitEvent {
-                hazard_type: match asteroid_type {
-                    Asteroid::Rock => HazardType::Rock,
-                    Asteroid::Ice => HazardType::Ice,
-                },
-                from_direction: direction,
-            });
+            let correct_direction = match asteroid_type {
+                Asteroid::Rock => ship_direction.rotate_ccw(),
+                Asteroid::Ice => ship_direction,
+            };
+            if direction == correct_direction {
+                commands.trigger(ScoreEvent);
+            } else {
+                **health -= 1;
+                commands.entity(ship_entity).insert(shake_for_ms(100));
+            }
         } else if transform.translation.length() <= 100.0 && asteroid_type == Asteroid::Rock {
             sprite.image = assets.broken_rock_asteroid.clone();
         }

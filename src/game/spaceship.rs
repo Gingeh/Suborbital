@@ -1,17 +1,6 @@
-use std::time::Duration;
-
 use bevy::prelude::*;
 
-use crate::{
-    AppState, GameAssets,
-    game::{
-        Shaking,
-        hazards::{HazardType, HitEvent},
-        health::Health,
-        score::ScoreEvent,
-    },
-    utils::Direction,
-};
+use crate::{AppState, GameAssets, utils::Direction};
 
 #[derive(Component)]
 pub struct Spaceship;
@@ -24,8 +13,7 @@ impl Plugin for SpaceshipPlugin {
             .add_systems(
                 Update,
                 (update_direction, apply_direction).run_if(in_state(AppState::Playing)),
-            )
-            .add_observer(handle_hits);
+            );
     }
 }
 
@@ -58,53 +46,4 @@ fn apply_direction(spaceship: Single<(&Direction, &mut Transform), With<Spaceshi
     let (direction, mut transform) = spaceship.into_inner();
     let target_quat = direction.to_quat();
     transform.rotation = transform.rotation.slerp(target_quat, 0.3);
-}
-
-fn handle_hits(
-    event: On<HitEvent>,
-    mut commands: Commands,
-    spaceship: Single<(Entity, &Direction), With<Spaceship>>,
-    mut health: ResMut<Health>,
-    mut app_state: ResMut<NextState<AppState>>,
-) {
-    let shake_for_ms = |millis| Shaking(Timer::new(Duration::from_millis(millis), TimerMode::Once));
-
-    let (entity, &direction) = spaceship.into_inner();
-    match event.hazard_type {
-        HazardType::Rock => {
-            if event.from_direction == direction.rotate_ccw() {
-                commands.trigger(ScoreEvent);
-            } else {
-                **health -= 1;
-                commands.entity(entity).insert(shake_for_ms(100));
-            }
-        }
-        HazardType::Ice => {
-            if event.from_direction == direction {
-                commands.trigger(ScoreEvent);
-            } else {
-                **health -= 1;
-                commands.entity(entity).insert(shake_for_ms(100));
-            }
-        }
-        HazardType::Satellite => {
-            if event.from_direction == direction.rotate_cw() {
-                commands.trigger(ScoreEvent);
-            } else {
-                **health -= 1;
-                commands.entity(entity).insert(shake_for_ms(100));
-            }
-        }
-        HazardType::Crate => {
-            if event.from_direction == direction.rotate_cw().rotate_cw() {
-                **health += 1;
-                commands.trigger(ScoreEvent);
-                commands.entity(entity).insert(shake_for_ms(200));
-            }
-        }
-    }
-
-    if **health == 0 {
-        app_state.set(AppState::GameOver);
-    }
 }

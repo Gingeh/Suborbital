@@ -54,7 +54,12 @@ fn update_health_display(
     health: Res<Health>,
     health_display: Single<Entity, With<HealthDisplay>>,
     assets: Res<GameAssets>,
+    mut app_state: ResMut<NextState<AppState>>,
 ) {
+    if **health == 0 {
+        app_state.set(AppState::GameOver);
+        return;
+    }
     commands.entity(*health_display).despawn_children();
     commands.entity(*health_display).with_children(|parent| {
         for _ in 0..**health {

@@ -6,11 +6,8 @@ use rand::{Rng, TryRngCore, rngs::OsRng};
 
 use crate::{
     AppState, GameAssets,
-    game::{
-        Shaking,
-        hazards::{HazardType, HitEvent},
-    },
-    utils::Direction,
+    game::{Shaking, health::Health, score::ScoreEvent, spaceship::Spaceship},
+    utils::{Direction, shake_for_ms},
 };
 
 pub struct SatellitePlugin;
@@ -74,7 +71,10 @@ fn update_satellites(
         Entity,
     )>,
     assets: Res<GameAssets>,
+    spaceship: Single<(Entity, &Direction), With<Spaceship>>,
+    mut health: ResMut<Health>,
 ) {
+    let (ship_entity, &ship_direction) = spaceship.into_inner();
     for (mut timer, mut state, mut sprite, mut transform, &direction, entity) in query {
         timer.tick(time.delta());
 
@@ -108,11 +108,12 @@ fn update_satellites(
                         },
                         Transform::from_translation(Vec3::new(0.0, 200.0, -1.0)),
                     ));
-
-                    commands.trigger(HitEvent {
-                        from_direction: direction,
-                        hazard_type: HazardType::Satellite,
-                    });
+                    if direction == ship_direction.rotate_cw() {
+                        commands.trigger(ScoreEvent);
+                    } else {
+                        **health -= 1;
+                        commands.entity(ship_entity).insert(shake_for_ms(100));
+                    }
                 }
             }
             SatelliteState::Firing => {
