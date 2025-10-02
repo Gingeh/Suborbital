@@ -121,7 +121,7 @@ fn update_satilites(
                     sprite.image = assets.satilite_idle.clone();
                     timer.set_duration(Duration::from_secs_f32(1.0));
                     timer.reset();
-                    commands.entity(entity).despawn();
+                    commands.entity(entity).despawn_children();
                 }
             }
             SatelliteState::Retreating => {

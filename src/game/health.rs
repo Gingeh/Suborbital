@@ -5,19 +5,23 @@ use crate::{AppState, GameAssets};
 #[derive(Resource, Deref, DerefMut)]
 pub struct Health(pub u32);
 
+impl Default for Health {
+    fn default() -> Self {
+        Self(3)
+    }
+}
+
 #[derive(Component)]
 struct HealthDisplay;
 
-pub struct HealthPlugin {
-    pub starting_health: u32,
-}
+pub struct HealthPlugin;
 
 impl Plugin for HealthPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Health(self.starting_health))
+        app.init_resource::<Health>()
             .add_systems(
                 OnEnter(AppState::Playing),
-                (spawn_health_display, update_health_display).chain(),
+                ((spawn_health_display, reset_health), update_health_display).chain(),
             )
             .add_systems(
                 Update,
@@ -26,6 +30,10 @@ impl Plugin for HealthPlugin {
                     .run_if(resource_changed::<Health>),
             );
     }
+}
+
+fn reset_health(mut health: ResMut<Health>) {
+    *health = Health::default();
 }
 
 fn spawn_health_display(mut commands: Commands) {

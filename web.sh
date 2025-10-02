@@ -71,7 +71,7 @@ zip)
 serve)
 	if [ "$release" == "yes" ]; then
 		set -x
-		bevy run --release web --wasm-opt "-Oz"
+		bevy run --release web
 		{ set +x; } 2>/dev/null
 	else
 		set -x
@@ -82,7 +82,7 @@ serve)
 open)
 	if [ "$release" == "yes" ]; then
 		set -x
-		bevy run --release web --wasm-opt "-Oz" --open
+		bevy run --release web --open
 		{ set +x; } 2>/dev/null
 	else
 		set -x

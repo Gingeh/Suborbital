@@ -18,7 +18,7 @@ impl Plugin for GamePlugin {
             spaceship::SpaceshipPlugin,
             hazards::HazardsPlugin,
             score::ScorePlugin,
-            health::HealthPlugin { starting_health: 3 },
+            health::HealthPlugin,
         ))
         .add_systems(Update, handle_shake);
     }
