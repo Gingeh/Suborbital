@@ -17,11 +17,25 @@ pub struct SatellitePlugin;
 
 impl Plugin for SatellitePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            update_satellites.run_if(in_state(AppState::Playing)),
-        )
-        .add_observer(spawn_observer);
+        app.insert_resource(OccupiedDirections([false; 4]))
+            .add_systems(
+                Update,
+                update_satellites.run_if(in_state(AppState::Playing)),
+            )
+            .add_observer(spawn_observer)
+            .add_observer(despawn_observer);
+    }
+}
+
+#[derive(Resource)]
+struct OccupiedDirections([bool; 4]);
+
+impl OccupiedDirections {
+    const fn is_occupied(&self, direction: Direction) -> bool {
+        self.0[direction.to_u8() as usize]
+    }
+    const fn set_occupied(&mut self, direction: Direction, occupied: bool) {
+        self.0[direction.to_u8() as usize] = occupied;
     }
 }
 
@@ -48,14 +62,18 @@ fn spawn_observer(
     mut commands: Commands,
     game_assets: Res<GameAssets>,
     mut previous_correct_direction: ResMut<PreviousCorrectDirection>,
+    mut occupied_directions: ResMut<OccupiedDirections>,
 ) {
     let entity = event.entity;
 
     let mut direction: Direction = OsRng.unwrap_err().random();
-    while **previous_correct_direction == correct_ship_direction(direction) {
+    while **previous_correct_direction == correct_ship_direction(direction)
+        || occupied_directions.is_occupied(direction)
+    {
         direction = OsRng.unwrap_err().random();
     }
     **previous_correct_direction = correct_ship_direction(direction);
+    occupied_directions.set_occupied(direction, true);
 
     commands.entity(entity).insert((
         direction,
@@ -70,6 +88,17 @@ fn spawn_observer(
             .with_rotation(direction.to_quat()),
         DespawnOnExit(AppState::Playing),
     ));
+}
+
+fn despawn_observer(
+    event: On<lifecycle::Remove, Satellite>,
+    mut occupied_directions: ResMut<OccupiedDirections>,
+    satellites: Query<&Direction>,
+) {
+    let entity = event.entity;
+    if let Ok(direction) = satellites.get(entity) {
+        occupied_directions.set_occupied(*direction, false);
+    }
 }
 
 fn update_satellites(
