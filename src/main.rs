@@ -1,6 +1,6 @@
 #![allow(clippy::type_complexity)]
 
-use std::f32::consts::PI;
+use std::f32::consts::TAU;
 
 use bevy::prelude::*;
 use bevy::{asset::AssetMetaCheck, window::WindowResolution};
@@ -107,5 +107,5 @@ fn animate_background(
     mut background_transform: Single<&mut Transform, With<Background>>,
     time: Res<Time>,
 ) {
-    background_transform.translation.x = (time.elapsed_secs() * PI / 60.0).cos() * 693.0;
+    background_transform.translation.x = (time.elapsed_secs() * TAU / 120.0).cos() * 693.0;
 }

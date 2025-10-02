@@ -1,4 +1,4 @@
-use std::f32::consts::PI;
+use std::f32::consts::TAU;
 
 use bevy::prelude::*;
 use rand::{Rng, distr::StandardUniform, prelude::Distribution};
@@ -31,7 +31,7 @@ pub fn button(text: impl Into<String>, assets: &GameAssets) -> impl Bundle {
     )
 }
 
-pub fn text_style(assets: &GameAssets, font_size: f32) -> impl Bundle {
+pub fn text_style(font_size: f32, assets: &GameAssets) -> impl Bundle {
     (
         TextFont {
             font: assets.font.clone(),
@@ -86,11 +86,11 @@ impl Direction {
 
     pub fn to_quat(self) -> Quat {
         Quat::from_rotation_z(
-            PI * match self {
+            TAU * match self {
                 Self::Up => 0.0,
-                Self::Left => 0.5,
-                Self::Down => 1.0,
-                Self::Right => 1.5,
+                Self::Left => 0.25,
+                Self::Down => 0.5,
+                Self::Right => 0.75,
             },
         )
     }

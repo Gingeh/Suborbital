@@ -8,11 +8,13 @@ pub struct Health(pub u32);
 #[derive(Component)]
 struct HealthDisplay;
 
-pub struct HealthPlugin;
+pub struct HealthPlugin {
+    pub starting_health: u32,
+}
 
 impl Plugin for HealthPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Health(3))
+        app.insert_resource(Health(self.starting_health))
             .add_systems(
                 OnEnter(AppState::Playing),
                 (spawn_health_display, update_health_display).chain(),
@@ -28,13 +30,13 @@ impl Plugin for HealthPlugin {
 
 fn spawn_health_display(mut commands: Commands) {
     commands.spawn((
+        HealthDisplay,
         Node {
             position_type: PositionType::Absolute,
             right: px(10),
             bottom: px(10),
             ..default()
         },
-        HealthDisplay,
         DespawnOnExit(AppState::Playing),
     ));
 }
@@ -49,10 +51,7 @@ fn update_health_display(
     commands.entity(*health_display).with_children(|parent| {
         for _ in 0..**health {
             parent.spawn((
-                ImageNode {
-                    image: assets.heart.clone(),
-                    ..default()
-                },
+                ImageNode::new(assets.heart.clone()),
                 Node {
                     width: px(50),
                     height: px(50),

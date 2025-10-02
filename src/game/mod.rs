@@ -1,4 +1,4 @@
-use std::f32::consts::PI;
+use std::f32::consts::TAU;
 
 use bevy::prelude::*;
 
@@ -18,7 +18,7 @@ impl Plugin for GamePlugin {
             spaceship::SpaceshipPlugin,
             hazards::HazardsPlugin,
             score::ScorePlugin,
-            health::HealthPlugin,
+            health::HealthPlugin { starting_health: 3 },
         ))
         .add_systems(Update, handle_shake);
     }
@@ -35,7 +35,7 @@ fn handle_shake(
             commands.entity(entity).try_remove::<Shaking>();
         } else {
             let progress = shaking.fraction();
-            transform.scale = Vec3::splat(f32::sin(progress * 2.0 * PI).mul_add(0.1, 1.0));
+            transform.scale = Vec3::splat(f32::sin(progress * TAU).mul_add(0.1, 1.0));
         }
     }
 }

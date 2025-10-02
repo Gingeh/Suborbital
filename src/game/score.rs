@@ -28,7 +28,10 @@ impl Plugin for ScorePlugin {
             score: 0,
             high_score: 0,
         })
-        .add_systems(OnExit(AppState::Splash), spawn_scoreboard)
+        .add_systems(
+            OnExit(AppState::Splash),
+            (spawn_scoreboard, update_scoreboard).chain(),
+        )
         .add_systems(Update, update_scoreboard.run_if(resource_changed::<Score>))
         .add_observer(update_score)
         .add_systems(OnEnter(AppState::Playing), (show_score, reset_score))
@@ -60,20 +63,20 @@ fn spawn_scoreboard(mut commands: Commands, assets: Res<GameAssets>) {
             (
                 ScoreDisplay,
                 Text::new("Score: "),
-                text_style(&*assets, 40.0),
+                text_style(40.0, &assets),
                 Node {
                     display: Display::None,
                     ..default()
                 },
-                children![(ScoreSpan, TextSpan::default(), text_style(&*assets, 40.0))],
+                children![(ScoreSpan, TextSpan::default(), text_style(40.0, &assets))],
             ),
             (
                 Text::new("High Score: "),
-                text_style(&*assets, 40.0),
+                text_style(40.0, &assets),
                 children![(
                     HighScoreSpan,
                     TextSpan::default(),
-                    text_style(&*assets, 40.0)
+                    text_style(40.0, &assets)
                 )],
             )
         ],

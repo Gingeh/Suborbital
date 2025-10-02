@@ -38,20 +38,17 @@ fn setup_menu(mut commands: Commands, assets: Res<GameAssets>) {
         },
         children![
             (
-                ImageNode {
-                    image: assets.game_logo.clone(),
-                    ..default()
-                },
+                ImageNode::new(assets.game_logo.clone()),
                 Node {
                     width: auto(),
                     height: px(300),
                     ..default()
                 },
             ),
-            (MenuButton::Play, button("Play", &*assets)),
+            (MenuButton::Play, button("Play", &assets)),
             (
                 MenuButton::Quit,
-                button("Quit", &*assets),
+                button("Quit", &assets),
                 #[cfg(target_family = "wasm")]
                 Disabled
             ),
@@ -72,40 +69,36 @@ fn setup_menu(mut commands: Commands, assets: Res<GameAssets>) {
         },
         children![
             (
-                ImageNode {
-                    image: assets.clubbo.clone(),
-                    ..default()
-                },
+                ImageNode::new(assets.clubbo.clone()),
                 Node {
                     width: px(100),
                     height: px(100),
                     ..default()
                 },
             ),
-            (Text::new("Art by Clubbo"), text_style(&*assets, 30.0),),
-            (Text::new("(Click Me!)"), text_style(&*assets, 20.0),)
+            (Text::new("Art by Clubbo"), text_style(30.0, &assets)),
+            (Text::new("(Click Me!)"), text_style(20.0, &assets))
         ],
     ));
 }
 
 fn menu_action(
-    interaction_query: Query<(&Interaction, &MenuButton), (Changed<Interaction>, With<Button>)>,
+    interaction_query: Query<(&Interaction, &MenuButton), Changed<Interaction>>,
     mut app_state: ResMut<NextState<AppState>>,
     mut app_exit_writer: MessageWriter<AppExit>,
 ) {
     for (interaction, menu_button_action) in &interaction_query {
-        if *interaction == Interaction::Pressed {
-            match menu_button_action {
-                MenuButton::Play => app_state.set(AppState::Playing),
-                MenuButton::Quit => {
-                    app_exit_writer.write(AppExit::Success);
-                }
-                MenuButton::Clubbo => {
-                    if let Err(error) =
-                        webbrowser::open("https://www.instagram.com/clubbo_cartoons/")
-                    {
-                        error!("Failed to open browser: {}", error);
-                    }
+        if *interaction != Interaction::Pressed {
+            continue;
+        }
+        match menu_button_action {
+            MenuButton::Play => app_state.set(AppState::Playing),
+            MenuButton::Quit => {
+                app_exit_writer.write(AppExit::Success);
+            }
+            MenuButton::Clubbo => {
+                if let Err(error) = webbrowser::open("https://www.instagram.com/clubbo_cartoons/") {
+                    error!("Failed to open browser: {}", error);
                 }
             }
         }

@@ -35,35 +35,33 @@ fn setup_menu(mut commands: Commands, assets: Res<GameAssets>, score: Res<Score>
         children![
             (
                 Text::new(format!("Score: {}", score.score)),
-                text_style(&*assets, 60.0),
+                text_style(60.0, &assets),
             ),
             (
-                ImageNode {
-                    image: assets.broken_spaceship.clone(),
-                    ..default()
-                },
+                ImageNode::new(assets.broken_spaceship.clone()),
                 Node {
                     width: auto(),
                     height: px(400),
                     ..default()
                 },
             ),
-            (button("Retry", &*assets), GameOverButton::Retry),
-            (button("Back to title", &*assets), GameOverButton::Menu),
+            (GameOverButton::Retry, button("Retry", &assets)),
+            (GameOverButton::Menu, button("Back to title", &assets)),
         ],
     ));
 }
 
 fn menu_action(
-    interaction_query: Query<(&Interaction, &GameOverButton), (Changed<Interaction>, With<Button>)>,
+    interaction_query: Query<(&Interaction, &GameOverButton), Changed<Interaction>>,
     mut app_state: ResMut<NextState<AppState>>,
 ) {
     for (interaction, menu_button_action) in &interaction_query {
-        if *interaction == Interaction::Pressed {
-            match menu_button_action {
-                GameOverButton::Retry => app_state.set(AppState::Playing),
-                GameOverButton::Menu => app_state.set(AppState::Menu),
-            }
+        if *interaction != Interaction::Pressed {
+            continue;
+        }
+        match menu_button_action {
+            GameOverButton::Retry => app_state.set(AppState::Playing),
+            GameOverButton::Menu => app_state.set(AppState::Menu),
         }
     }
 }

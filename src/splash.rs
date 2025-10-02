@@ -30,17 +30,14 @@ fn setup_splash(mut commands: Commands, assets: Res<GameAssets>) {
         },
         children![
             (
-                ImageNode {
-                    image: assets.bevy_logo.clone(),
-                    ..default()
-                },
+                ImageNode::new(assets.bevy_logo.clone()),
                 Node {
                     width: auto(),
                     height: px(200),
                     ..default()
                 },
             ),
-            (Text::new("Made with Bevy"), text_style(&*assets, 40.0))
+            (Text::new("Made with Bevy"), text_style(40.0, &assets))
         ],
     ));
 

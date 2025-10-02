@@ -1,9 +1,11 @@
 use bevy::ecs::system::Command;
 use bevy::prelude::*;
 
-use crate::{AppState, GameAssets, utils::Direction};
-
-use super::{HazardType, HitEvent};
+use crate::{
+    AppState, GameAssets,
+    game::hazards::{HazardType, HitEvent},
+    utils::Direction,
+};
 
 pub struct CratePlugin;
 

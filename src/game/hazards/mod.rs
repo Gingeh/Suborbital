@@ -4,9 +4,7 @@ use bevy::prelude::*;
 use rand::distr::StandardUniform;
 use rand::prelude::*;
 
-use crate::{AppState, utils::Direction};
-
-use super::score::Score;
+use crate::{AppState, game::score::Score, utils::Direction};
 
 mod asteroids;
 mod crates;
