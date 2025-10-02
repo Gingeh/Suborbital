@@ -35,9 +35,14 @@ if [[ -z "$task" ]]; then
 	exit 1
 fi
 
-# check that jq and the bevy CLI are installed
+# check that jq, wasm-opt and the bevy CLI are installed
 if ! command -v jq &>/dev/null; then
 	echo "jq could not be found, please install it" >&2
+	exit 1
+fi
+
+if ! command -v wasm-opt &>/dev/null; then
+	echo "wasm-opt could not be found, please install it" >&2
 	exit 1
 fi
 
@@ -52,13 +57,14 @@ case "$task" in
 zip)
 	if [ "$release" == "yes" ]; then
 		set -x
-		RUSTFLAGS="-Zlocation-detail=none" bevy build --release web --bundle --wasm-opt "-Oz"
+		RUSTFLAGS="-Zunstable-options -Zlocation-detail=none" bevy build --release web --bundle --wasm-opt "-O0"
+		wasm-opt --traps-never-happen --converge --all-features --low-memory-unused --fast-math --zero-filled-memory -Oz target/bevy_web/web-release/"$package_name"/build/"$package_name"_bg.wasm -o target/bevy_web/web-release/"$package_name"/build/"$package_name"_bg.wasm
 		(cd target/bevy_web/web-release/"$package_name"/ && zip -r - .) >"$package_name".zip
 		{ set +x; } 2>/dev/null
 	else
 		set -x
 		bevy build web --bundle
-		(cd target/bevy_web/web-release/"$package_name"/ && zip -r - .) >"$package_name".zip
+		(cd target/bevy_web/web/"$package_name"/ && zip -r - .) >"$package_name".zip
 		{ set +x; } 2>/dev/null
 	fi
 	;;
