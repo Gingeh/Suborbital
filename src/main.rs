@@ -50,7 +50,7 @@ impl FromWorld for GameAssets {
             broken_rock_astroid: asset_server.load("rock-broken.png"),
             ice_astroid: asset_server.load("ice.png"),
             background: asset_server.load("background.png"),
-            font: asset_server.load("Overpass-SemiBold.ttf"),
+            font: asset_server.load("Overpass-SemiBold.subset.ttf"),
             bevy_logo: asset_server.load("bevy.png"),
             game_logo: asset_server.load("logo.png"),
             clubbo: asset_server.load("clubbo.png"),
