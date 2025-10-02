@@ -97,9 +97,7 @@ fn menu_action(
                 app_exit_writer.write(AppExit::Success);
             }
             MenuButton::Clubbo => {
-                if let Err(error) = webbrowser::open("https://www.instagram.com/clubbo_cartoons/") {
-                    error!("Failed to open browser: {}", error);
-                }
+                _ = webbrowser::open("https://www.instagram.com/clubbo_cartoons/");
             }
         }
     }

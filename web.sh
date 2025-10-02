@@ -52,7 +52,7 @@ case "$task" in
 zip)
 	if [ "$release" == "yes" ]; then
 		set -x
-		bevy build --release web --bundle --wasm-opt "-Oz"
+		RUSTFLAGS="-Zlocation-detail=none" bevy build --release web --bundle --wasm-opt "-Oz"
 		(cd target/bevy_web/web-release/"$package_name"/ && zip -r - .) >"$package_name".zip
 		{ set +x; } 2>/dev/null
 	else

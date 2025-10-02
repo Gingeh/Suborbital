@@ -6,22 +6,30 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 bevy = { version = "0.17", default-features = false, features = [
-    "bevy_log",
     "bevy_state",
     "bevy_ui_render",
-    "png",
-    "webgl2",
+    "qoi",
     "x11",
     "wayland",
 ] }
-rand = { version = "0.9", default-features = false, features = ["thread_rng"] }
+rand = { version = "0.9", default-features = false, features = ["os_rng"] }
 webbrowser = { version = "1", default-features = false, features = [
     "hardened",
 ] }
 
-[profile.release]
+[target.wasm32-unknown-unknown.dependencies]
+bevy = { version = "0.17", default-features = false, features = [
+    "bevy_state",
+    "bevy_ui_render",
+    "qoi",
+    "webgl2",
+    "bevy_winit",
+] }
+
+[profile.web-release]
+inherits = "release"
 codegen-units = 1
-lto = "thin"
+lto = "fat"
 opt-level = "z"
-strip = true
+strip = "debuginfo"
 panic = "abort"

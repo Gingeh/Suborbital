@@ -44,21 +44,21 @@ impl FromWorld for GameAssets {
         let asset_server = world.get_resource_mut::<AssetServer>().unwrap();
 
         Self {
-            spaceship: asset_server.load("ship.png"),
-            broken_spaceship: asset_server.load("ship-broken.png"),
-            rock_astroid: asset_server.load("rock.png"),
-            broken_rock_astroid: asset_server.load("rock-broken.png"),
-            ice_astroid: asset_server.load("ice.png"),
-            background: asset_server.load("background.png"),
+            spaceship: asset_server.load("ship.qoi"),
+            broken_spaceship: asset_server.load("ship-broken.qoi"),
+            rock_astroid: asset_server.load("rock.qoi"),
+            broken_rock_astroid: asset_server.load("rock-broken.qoi"),
+            ice_astroid: asset_server.load("ice.qoi"),
+            background: asset_server.load("background.qoi"),
             font: asset_server.load("Overpass-SemiBold.subset.ttf"),
-            bevy_logo: asset_server.load("bevy.png"),
-            game_logo: asset_server.load("logo.png"),
-            clubbo: asset_server.load("clubbo.png"),
-            satilite_idle: asset_server.load("satilite-idle.png"),
-            satilite_charging: asset_server.load("satilite-charging.png"),
-            laser: asset_server.load("laser.png"),
-            heart: asset_server.load("heart.png"),
-            health_crate: asset_server.load("health-crate.png"),
+            bevy_logo: asset_server.load("bevy.qoi"),
+            game_logo: asset_server.load("logo.qoi"),
+            clubbo: asset_server.load("clubbo.qoi"),
+            satilite_idle: asset_server.load("satilite-idle.qoi"),
+            satilite_charging: asset_server.load("satilite-charging.qoi"),
+            laser: asset_server.load("laser.qoi"),
+            heart: asset_server.load("heart.qoi"),
+            health_crate: asset_server.load("health-crate.qoi"),
         }
     }
 }

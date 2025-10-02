@@ -3,6 +3,7 @@ use std::time::Duration;
 use bevy::prelude::*;
 use rand::distr::StandardUniform;
 use rand::prelude::*;
+use rand::{Rng, TryRngCore, rngs::OsRng};
 
 use crate::{AppState, game::score::Score, utils::Direction};
 
@@ -65,7 +66,7 @@ fn spawn_hazards(
     timer.set_duration(Duration::from_secs_f32(
         15.0 / (score.score as f32 + 10.0) + 0.5,
     ));
-    let hazard_type: HazardType = rand::random();
+    let hazard_type: HazardType = OsRng.unwrap_err().random();
 
     match hazard_type {
         HazardType::Rock => commands.queue(asteroids::SpawnAsteroidCommand::Rock),

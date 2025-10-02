@@ -1,5 +1,6 @@
 use bevy::ecs::system::Command;
 use bevy::prelude::*;
+use rand::{Rng, TryRngCore, rngs::OsRng};
 
 use crate::{
     AppState, GameAssets,
@@ -22,7 +23,7 @@ pub struct SpawnCrateCommand;
 
 impl Command for SpawnCrateCommand {
     fn apply(self, world: &mut World) {
-        let direction: Direction = rand::random();
+        let direction: Direction = OsRng.unwrap_err().random();
 
         world.spawn((
             Crate,

@@ -1,5 +1,6 @@
 use bevy::ecs::system::Command;
 use bevy::prelude::*;
+use rand::{Rng, TryRngCore, rngs::OsRng};
 
 use crate::{
     AppState, GameAssets,
@@ -25,7 +26,7 @@ pub enum SpawnAsteroidCommand {
 
 impl Command for SpawnAsteroidCommand {
     fn apply(self, world: &mut World) {
-        let direction: Direction = rand::random();
+        let direction: Direction = OsRng.unwrap_err().random();
 
         let hazard_type = match self {
             Self::Rock => HazardType::Rock,
