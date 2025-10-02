@@ -88,15 +88,17 @@ impl Direction {
         }
     }
 
+    pub const fn to_u8(self) -> u8 {
+        match self {
+            Self::Up => 0,
+            Self::Left => 1,
+            Self::Down => 2,
+            Self::Right => 3,
+        }
+    }
+
     pub fn to_quat(self) -> Quat {
-        Quat::from_rotation_z(
-            TAU * match self {
-                Self::Up => 0.0,
-                Self::Left => 0.25,
-                Self::Down => 0.5,
-                Self::Right => 0.75,
-            },
-        )
+        Quat::from_rotation_z(TAU * f32::from(self.to_u8()) / 4.0)
     }
 
     pub const fn to_vec3(self) -> Vec3 {

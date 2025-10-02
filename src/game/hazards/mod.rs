@@ -14,6 +14,7 @@ use crate::{
         health::Health,
         score::Score,
     },
+    utils::Direction,
 };
 
 mod asteroids;
@@ -23,11 +24,15 @@ mod satellite;
 #[derive(Resource, Deref, DerefMut)]
 struct HazardTimer(Timer);
 
+#[derive(Resource, Deref, DerefMut)]
+pub struct PreviousCorrectDirection(pub Direction);
+
 pub struct HazardsPlugin;
 
 impl Plugin for HazardsPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(HazardTimer(Timer::from_seconds(1.0, TimerMode::Repeating)))
+            .insert_resource(PreviousCorrectDirection(Direction::Up))
             .add_systems(Update, spawn_hazards.run_if(in_state(AppState::Playing)))
             .add_plugins((AsteroidsPlugin, SatellitePlugin, CratePlugin));
     }

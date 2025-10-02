@@ -6,7 +6,10 @@ use rand::{Rng, TryRngCore, rngs::OsRng};
 
 use crate::{
     AppState, GameAssets,
-    game::{Shaking, health::Health, score::ScoreEvent, spaceship::Spaceship},
+    game::{
+        Shaking, hazards::PreviousCorrectDirection, health::Health, score::ScoreEvent,
+        spaceship::Spaceship,
+    },
     utils::{Direction, shake_for_ms},
 };
 
@@ -36,13 +39,23 @@ enum SatelliteState {
 #[derive(Component, Deref, DerefMut)]
 struct SatelliteTimer(Timer);
 
+const fn correct_ship_direction(hazard_direction: Direction) -> Direction {
+    hazard_direction.rotate_ccw()
+}
+
 fn spawn_observer(
     event: On<lifecycle::Add, Satellite>,
     mut commands: Commands,
     game_assets: Res<GameAssets>,
+    mut previous_correct_direction: ResMut<PreviousCorrectDirection>,
 ) {
     let entity = event.entity;
-    let direction: Direction = OsRng.unwrap_err().random();
+
+    let mut direction: Direction = OsRng.unwrap_err().random();
+    while **previous_correct_direction == correct_ship_direction(direction) {
+        direction = OsRng.unwrap_err().random();
+    }
+    **previous_correct_direction = correct_ship_direction(direction);
 
     commands.entity(entity).insert((
         direction,
@@ -108,7 +121,7 @@ fn update_satellites(
                         },
                         Transform::from_translation(Vec3::new(0.0, 200.0, -1.0)),
                     ));
-                    if direction == ship_direction.rotate_cw() {
+                    if ship_direction == correct_ship_direction(direction) {
                         commands.trigger(ScoreEvent);
                     } else {
                         **health -= 1;

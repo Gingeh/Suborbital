@@ -4,7 +4,7 @@ use rand::{Rng, TryRngCore, rngs::OsRng};
 
 use crate::{
     AppState, GameAssets,
-    game::{health::Health, spaceship::Spaceship},
+    game::{hazards::PreviousCorrectDirection, health::Health, spaceship::Spaceship},
     utils::{Direction, shake_for_ms},
 };
 
@@ -20,13 +20,23 @@ impl Plugin for CratePlugin {
 #[derive(Component)]
 pub struct Crate;
 
+const fn correct_ship_direction(hazard_direction: Direction) -> Direction {
+    hazard_direction.rotate_cw().rotate_cw()
+}
+
 fn spawn_observer(
     event: On<lifecycle::Add, Crate>,
     mut commands: Commands,
     game_assets: Res<GameAssets>,
+    mut previous_correct_direction: ResMut<PreviousCorrectDirection>,
 ) {
     let entity = event.entity;
-    let direction: Direction = OsRng.unwrap_err().random();
+
+    let mut direction: Direction = OsRng.unwrap_err().random();
+    while **previous_correct_direction == correct_ship_direction(direction) {
+        direction = OsRng.unwrap_err().random();
+    }
+    **previous_correct_direction = correct_ship_direction(direction);
 
     commands.entity(entity).insert((
         direction,
@@ -54,7 +64,7 @@ fn update_crates(
 
         if transform.translation.length() <= 70.0 {
             commands.entity(entity).despawn();
-            if direction == ship_direction.rotate_cw().rotate_cw() {
+            if ship_direction == correct_ship_direction(direction) {
                 **health += 1;
                 commands.entity(ship_entity).insert(shake_for_ms(200));
             }

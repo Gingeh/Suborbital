@@ -4,7 +4,9 @@ use rand::{Rng, TryRngCore, rngs::OsRng};
 
 use crate::{
     AppState, GameAssets,
-    game::{health::Health, score::ScoreEvent, spaceship::Spaceship},
+    game::{
+        hazards::PreviousCorrectDirection, health::Health, score::ScoreEvent, spaceship::Spaceship,
+    },
     utils::{Direction, shake_for_ms},
 };
 
@@ -23,20 +25,33 @@ pub enum Asteroid {
     Ice,
 }
 
+const fn correct_ship_direction(hazard_direction: Direction, asteroid_type: Asteroid) -> Direction {
+    match asteroid_type {
+        Asteroid::Rock => hazard_direction.rotate_cw(),
+        Asteroid::Ice => hazard_direction,
+    }
+}
+
 fn spawn_observer(
     event: On<lifecycle::Add, Asteroid>,
     mut commands: Commands,
     asteroid_types: Query<&Asteroid>,
     game_assets: Res<GameAssets>,
+    mut previous_correct_direction: ResMut<PreviousCorrectDirection>,
 ) {
     let entity = event.entity;
     let asteroid_type = asteroid_types.get(entity).unwrap();
-    let direction: Direction = OsRng.unwrap_err().random();
 
     let sprite = match asteroid_type {
         Asteroid::Rock => game_assets.rock_asteroid.clone(),
         Asteroid::Ice => game_assets.ice_asteroid.clone(),
     };
+
+    let mut direction: Direction = OsRng.unwrap_err().random();
+    while **previous_correct_direction == correct_ship_direction(direction, *asteroid_type) {
+        direction = OsRng.unwrap_err().random();
+    }
+    **previous_correct_direction = correct_ship_direction(direction, *asteroid_type);
 
     commands.entity(entity).insert((
         direction,
@@ -64,11 +79,7 @@ fn update_asteroids(
         transform.translation += direction.to_vec3() * time.delta_secs() * 200.0;
         if transform.translation.length() <= 70.0 {
             commands.entity(entity).despawn();
-            let correct_direction = match asteroid_type {
-                Asteroid::Rock => ship_direction.rotate_ccw(),
-                Asteroid::Ice => ship_direction,
-            };
-            if direction == correct_direction {
+            if ship_direction == correct_ship_direction(direction, asteroid_type) {
                 commands.trigger(ScoreEvent);
             } else {
                 **health -= 1;
