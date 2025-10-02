@@ -3,7 +3,7 @@ use bevy::prelude::*;
 
 use crate::{AppState, GameAssets, utils::Direction};
 
-use super::{HazardType, HitMessage};
+use super::{HazardType, HitEvent};
 
 pub struct CratePlugin;
 
@@ -42,7 +42,6 @@ impl Command for SpawnCrateCommand {
 
 fn update_crates(
     mut commands: Commands,
-    mut event_writer: MessageWriter<HitMessage>,
     crates: Query<(Entity, &Direction, &mut Transform), With<Crate>>,
     time: Res<Time>,
 ) {
@@ -52,7 +51,7 @@ fn update_crates(
 
         if transform.translation.length() <= 70.0 {
             commands.entity(entity).despawn();
-            event_writer.write(HitMessage {
+            commands.trigger(HitEvent {
                 hazard_type: HazardType::Crate,
                 from_direction: direction,
             });

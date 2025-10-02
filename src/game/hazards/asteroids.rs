@@ -3,7 +3,7 @@ use bevy::prelude::*;
 
 use crate::{AppState, GameAssets, utils::Direction};
 
-use super::{HazardType, HitMessage};
+use super::{HazardType, HitEvent};
 
 pub struct AsteroidsPlugin;
 
@@ -62,7 +62,6 @@ impl Command for SpawnAsteroidCommand {
 fn update_asteroids(
     mut commands: Commands,
     assets: Res<GameAssets>,
-    mut hit_writer: MessageWriter<HitMessage>,
     asteroids: Query<
         (Entity, &Direction, &HazardType, &mut Transform, &mut Sprite),
         With<Asteroid>,
@@ -73,7 +72,7 @@ fn update_asteroids(
         transform.translation += direction.to_vec3() * time.delta_secs() * 200.0;
         if transform.translation.length() <= 70.0 {
             commands.entity(entity).despawn();
-            hit_writer.write(HitMessage {
+            commands.trigger(HitEvent {
                 hazard_type,
                 from_direction: direction,
             });

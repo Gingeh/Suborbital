@@ -8,8 +8,8 @@ pub struct Score {
     pub high_score: usize,
 }
 
-#[derive(Message)]
-pub struct ScoreMessage;
+#[derive(Event)]
+pub struct ScoreEvent;
 
 #[derive(Component)]
 struct ScoreDisplay;
@@ -28,26 +28,19 @@ impl Plugin for ScorePlugin {
             score: 0,
             high_score: 0,
         })
-        .add_message::<ScoreMessage>()
         .add_systems(OnExit(AppState::Splash), spawn_scoreboard)
-        .add_systems(
-            Update,
-            (
-                update_score,
-                update_scoreboard.run_if(resource_changed::<Score>),
-            ),
-        )
+        .add_systems(Update, update_scoreboard.run_if(resource_changed::<Score>))
+        .add_observer(update_score)
         .add_systems(OnEnter(AppState::Playing), (show_score, reset_score))
         .add_systems(OnExit(AppState::Playing), hide_score);
     }
 }
 
-fn update_score(mut score: ResMut<Score>, mut score_events: MessageReader<ScoreMessage>) {
-    score.score += score_events.len();
+fn update_score(_: On<ScoreEvent>, mut score: ResMut<Score>) {
+    score.score += 1;
     if score.score > score.high_score {
         score.high_score = score.score;
     }
-    score_events.clear();
 }
 
 fn reset_score(mut score: ResMut<Score>) {

@@ -34,8 +34,8 @@ impl Distribution<HazardType> for StandardUniform {
     }
 }
 
-#[derive(Message)]
-pub struct HitMessage {
+#[derive(Event)]
+pub struct HitEvent {
     pub hazard_type: HazardType,
     pub from_direction: Direction,
 }
@@ -45,7 +45,6 @@ pub struct HazardsPlugin;
 impl Plugin for HazardsPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(HazardTimer(Timer::from_seconds(1.0, TimerMode::Repeating)))
-            .add_message::<HitMessage>()
             .add_systems(Update, spawn_hazards.run_if(in_state(AppState::Playing)))
             .add_plugins((
                 asteroids::AsteroidsPlugin,

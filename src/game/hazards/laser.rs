@@ -5,7 +5,7 @@ use bevy::prelude::*;
 
 use crate::{AppState, GameAssets, game::Shaking, utils::Direction};
 
-use super::{HazardType, HitMessage};
+use super::{HazardType, HitEvent};
 
 pub struct LaserPlugin;
 
@@ -68,7 +68,6 @@ fn update_satilites(
         Entity,
     )>,
     assets: Res<GameAssets>,
-    mut hit_event_writer: MessageWriter<HitMessage>,
 ) {
     for (mut timer, mut state, mut sprite, mut transform, &direction, entity) in query {
         timer.tick(time.delta());
@@ -104,7 +103,7 @@ fn update_satilites(
                         Transform::from_translation(Vec3::new(0.0, 200.0, -1.0)),
                     ));
 
-                    hit_event_writer.write(HitMessage {
+                    commands.trigger(HitEvent {
                         from_direction: direction,
                         hazard_type: HazardType::Laser,
                     });

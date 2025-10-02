@@ -2,12 +2,15 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use crate::{AppState, GameAssets, game::health::Health, utils::Direction};
-
-use super::{
-    Shaking,
-    hazards::{HazardType, HitMessage},
-    score::ScoreMessage,
+use crate::{
+    AppState, GameAssets,
+    game::{
+        Shaking,
+        hazards::{HazardType, HitEvent},
+        health::Health,
+        score::ScoreEvent,
+    },
+    utils::Direction,
 };
 
 #[derive(Component)]
@@ -20,9 +23,9 @@ impl Plugin for SpaceshipPlugin {
         app.add_systems(OnEnter(AppState::Playing), spawn_spaceship)
             .add_systems(
                 Update,
-                (update_direction, apply_direction, handle_hits)
-                    .run_if(in_state(AppState::Playing)),
-            );
+                (update_direction, apply_direction).run_if(in_state(AppState::Playing)),
+            )
+            .add_observer(handle_hits);
     }
 }
 
@@ -58,9 +61,8 @@ fn apply_direction(spaceship: Single<(&Direction, &mut Transform), With<Spaceshi
 }
 
 fn handle_hits(
+    event: On<HitEvent>,
     mut commands: Commands,
-    mut hit_reader: MessageReader<HitMessage>,
-    mut score_writer: MessageWriter<ScoreMessage>,
     spaceship: Single<(Entity, &Direction), With<Spaceship>>,
     mut health: ResMut<Health>,
     mut app_state: ResMut<NextState<AppState>>,
@@ -68,43 +70,41 @@ fn handle_hits(
     let shake_for_ms = |millis| Shaking(Timer::new(Duration::from_millis(millis), TimerMode::Once));
 
     let (entity, &direction) = spaceship.into_inner();
-    for event in hit_reader.read() {
-        match event.hazard_type {
-            HazardType::Rock => {
-                if event.from_direction == direction.rotate_ccw() {
-                    score_writer.write(ScoreMessage);
-                } else {
-                    **health -= 1;
-                    commands.entity(entity).insert(shake_for_ms(100));
-                }
-            }
-            HazardType::Ice => {
-                if event.from_direction == direction {
-                    score_writer.write(ScoreMessage);
-                } else {
-                    **health -= 1;
-                    commands.entity(entity).insert(shake_for_ms(100));
-                }
-            }
-            HazardType::Laser => {
-                if event.from_direction == direction.rotate_cw() {
-                    score_writer.write(ScoreMessage);
-                } else {
-                    **health -= 1;
-                    commands.entity(entity).insert(shake_for_ms(100));
-                }
-            }
-            HazardType::Crate => {
-                if event.from_direction == direction.rotate_cw().rotate_cw() {
-                    **health += 1;
-                    score_writer.write(ScoreMessage);
-                    commands.entity(entity).insert(shake_for_ms(200));
-                }
+    match event.hazard_type {
+        HazardType::Rock => {
+            if event.from_direction == direction.rotate_ccw() {
+                commands.trigger(ScoreEvent);
+            } else {
+                **health -= 1;
+                commands.entity(entity).insert(shake_for_ms(100));
             }
         }
+        HazardType::Ice => {
+            if event.from_direction == direction {
+                commands.trigger(ScoreEvent);
+            } else {
+                **health -= 1;
+                commands.entity(entity).insert(shake_for_ms(100));
+            }
+        }
+        HazardType::Laser => {
+            if event.from_direction == direction.rotate_cw() {
+                commands.trigger(ScoreEvent);
+            } else {
+                **health -= 1;
+                commands.entity(entity).insert(shake_for_ms(100));
+            }
+        }
+        HazardType::Crate => {
+            if event.from_direction == direction.rotate_cw().rotate_cw() {
+                **health += 1;
+                commands.trigger(ScoreEvent);
+                commands.entity(entity).insert(shake_for_ms(200));
+            }
+        }
+    }
 
-        if **health == 0 {
-            app_state.set(AppState::GameOver);
-        }
+    if **health == 0 {
+        app_state.set(AppState::GameOver);
     }
 }
