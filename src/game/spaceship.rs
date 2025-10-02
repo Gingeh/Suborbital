@@ -87,7 +87,7 @@ fn handle_hits(
                 commands.entity(entity).insert(shake_for_ms(100));
             }
         }
-        HazardType::Laser => {
+        HazardType::Satellite => {
             if event.from_direction == direction.rotate_cw() {
                 commands.trigger(ScoreEvent);
             } else {

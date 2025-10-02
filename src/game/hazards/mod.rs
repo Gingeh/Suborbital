@@ -7,13 +7,21 @@ use rand::{Rng, TryRngCore, rngs::OsRng};
 
 use crate::{
     AppState,
-    game::{health::Health, score::Score},
+    game::{
+        hazards::{
+            asteroids::{Asteroid, AsteroidsPlugin},
+            crates::{Crate, CratePlugin},
+            satellite::{Satellite, SatellitePlugin},
+        },
+        health::Health,
+        score::Score,
+    },
     utils::Direction,
 };
 
 mod asteroids;
 mod crates;
-mod laser;
+mod satellite;
 
 #[derive(Resource, Deref, DerefMut)]
 struct HazardTimer(Timer);
@@ -22,17 +30,17 @@ struct HazardTimer(Timer);
 pub enum HazardType {
     Rock,
     Ice,
-    Laser,
+    Satellite,
     Crate,
 }
 
 impl Distribution<HazardType> for StandardUniform {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> HazardType {
         match rng.random_range(0..10) {
-            0..=3 => HazardType::Rock,  // 4/10 chance
-            4..=6 => HazardType::Ice,   // 3/10 chance
-            7..=7 => HazardType::Laser, // 1/10 chance
-            _ => HazardType::Crate,     // 2/10 chance
+            0..=3 => HazardType::Rock,      // 4/10 chance
+            4..=6 => HazardType::Ice,       // 3/10 chance
+            7..=7 => HazardType::Satellite, // 1/10 chance
+            _ => HazardType::Crate,         // 2/10 chance
         }
     }
 }
@@ -49,11 +57,7 @@ impl Plugin for HazardsPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(HazardTimer(Timer::from_seconds(1.0, TimerMode::Repeating)))
             .add_systems(Update, spawn_hazards.run_if(in_state(AppState::Playing)))
-            .add_plugins((
-                asteroids::AsteroidsPlugin,
-                laser::LaserPlugin,
-                crates::CratePlugin,
-            ));
+            .add_plugins((AsteroidsPlugin, SatellitePlugin, CratePlugin));
     }
 }
 
@@ -72,20 +76,19 @@ fn spawn_hazards(
         15.0 / (score.score as f32 + 10.0) + 0.5,
     ));
 
-    match OsRng.unwrap_err().random() {
-        HazardType::Rock => commands.queue(asteroids::SpawnAsteroidCommand::Rock),
-        HazardType::Ice => commands.queue(asteroids::SpawnAsteroidCommand::Ice),
-        HazardType::Laser => commands.queue(laser::SpawnLaserCommand),
-        HazardType::Crate => {
-            if **health < *Health::default() {
-                commands.queue(crates::SpawnCrateCommand);
-            } else {
-                match OsRng.unwrap_err().random() {
-                    HazardType::Rock => commands.queue(asteroids::SpawnAsteroidCommand::Rock),
-                    HazardType::Ice => commands.queue(asteroids::SpawnAsteroidCommand::Ice),
-                    HazardType::Laser => commands.queue(laser::SpawnLaserCommand),
-                    HazardType::Crate => commands.queue(crates::SpawnCrateCommand),
-                }
+    match OsRng.unwrap_err().random_range(0..10) {
+        0..=3 => {
+            commands.spawn(Asteroid::Rock);
+        }
+        4..=6 => {
+            commands.spawn(Asteroid::Ice);
+        }
+        7..=8 => {
+            commands.spawn(Satellite);
+        }
+        _ => {
+            if OsRng.unwrap_err().random_range(0..**health) == 0 {
+                commands.spawn(Crate);
             }
         }
     }

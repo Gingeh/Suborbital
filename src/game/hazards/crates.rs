@@ -1,4 +1,4 @@
-use bevy::ecs::system::Command;
+use bevy::ecs::lifecycle;
 use bevy::prelude::*;
 use rand::{Rng, TryRngCore, rngs::OsRng};
 
@@ -12,35 +12,32 @@ pub struct CratePlugin;
 
 impl Plugin for CratePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, update_crates.run_if(in_state(AppState::Playing)));
+        app.add_systems(Update, update_crates.run_if(in_state(AppState::Playing)))
+            .add_observer(spawn_observer);
     }
 }
 
 #[derive(Component)]
-struct Crate;
+pub struct Crate;
 
-pub struct SpawnCrateCommand;
+fn spawn_observer(
+    event: On<lifecycle::Add, Crate>,
+    mut commands: Commands,
+    game_assets: Res<GameAssets>,
+) {
+    let entity = event.entity;
+    let direction: Direction = OsRng.unwrap_err().random();
 
-impl Command for SpawnCrateCommand {
-    fn apply(self, world: &mut World) {
-        let direction: Direction = OsRng.unwrap_err().random();
-
-        world.spawn((
-            Crate,
-            direction,
-            Sprite {
-                image: world
-                    .get_resource::<GameAssets>()
-                    .unwrap()
-                    .health_crate
-                    .clone(),
-                custom_size: Some(Vec2 { x: 50.0, y: 50.0 }),
-                ..default()
-            },
-            Transform::from_translation(direction.to_vec3() * -500.0 + Vec3::Z),
-            DespawnOnExit(AppState::Playing),
-        ));
-    }
+    commands.entity(entity).insert((
+        direction,
+        Sprite {
+            image: game_assets.health_crate.clone(),
+            custom_size: Some(Vec2 { x: 50.0, y: 50.0 }),
+            ..default()
+        },
+        Transform::from_translation(direction.to_vec3() * -500.0 + Vec3::Z),
+        DespawnOnExit(AppState::Playing),
+    ));
 }
 
 fn update_crates(

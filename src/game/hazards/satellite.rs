@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bevy::ecs::system::Command;
+use bevy::ecs::lifecycle;
 use bevy::prelude::*;
 use rand::{Rng, TryRngCore, rngs::OsRng};
 
@@ -13,16 +13,20 @@ use crate::{
     utils::Direction,
 };
 
-pub struct LaserPlugin;
+pub struct SatellitePlugin;
 
-impl Plugin for LaserPlugin {
+impl Plugin for SatellitePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, update_satilites.run_if(in_state(AppState::Playing)));
+        app.add_systems(
+            Update,
+            update_satellites.run_if(in_state(AppState::Playing)),
+        )
+        .add_observer(spawn_observer);
     }
 }
 
 #[derive(Component)]
-struct Satellite;
+pub struct Satellite;
 
 #[derive(Component)]
 enum SatelliteState {
@@ -35,34 +39,30 @@ enum SatelliteState {
 #[derive(Component, Deref, DerefMut)]
 struct SatelliteTimer(Timer);
 
-pub struct SpawnLaserCommand;
+fn spawn_observer(
+    event: On<lifecycle::Add, Satellite>,
+    mut commands: Commands,
+    game_assets: Res<GameAssets>,
+) {
+    let entity = event.entity;
+    let direction: Direction = OsRng.unwrap_err().random();
 
-impl Command for SpawnLaserCommand {
-    fn apply(self, world: &mut World) {
-        let direction: Direction = OsRng.unwrap_err().random();
-
-        world.spawn((
-            Satellite,
-            direction,
-            SatelliteState::Idle,
-            SatelliteTimer(Timer::from_seconds(1.5, TimerMode::Once)),
-            Sprite {
-                image: world
-                    .get_resource::<GameAssets>()
-                    .unwrap()
-                    .satilite_idle
-                    .clone(),
-                custom_size: Some(Vec2 { x: 120.0, y: 120.0 }),
-                ..default()
-            },
-            Transform::from_translation(direction.to_vec3() * -500.0 + Vec3::Z * 2.0)
-                .with_rotation(direction.to_quat()),
-            DespawnOnExit(AppState::Playing),
-        ));
-    }
+    commands.entity(entity).insert((
+        direction,
+        SatelliteState::Idle,
+        SatelliteTimer(Timer::from_seconds(1.5, TimerMode::Once)),
+        Sprite {
+            image: game_assets.satilite_idle.clone(),
+            custom_size: Some(Vec2 { x: 120.0, y: 120.0 }),
+            ..default()
+        },
+        Transform::from_translation(direction.to_vec3() * -500.0 + Vec3::Z * 2.0)
+            .with_rotation(direction.to_quat()),
+        DespawnOnExit(AppState::Playing),
+    ));
 }
 
-fn update_satilites(
+fn update_satellites(
     mut commands: Commands,
     time: Res<Time>,
     query: Query<(
@@ -111,7 +111,7 @@ fn update_satilites(
 
                     commands.trigger(HitEvent {
                         from_direction: direction,
-                        hazard_type: HazardType::Laser,
+                        hazard_type: HazardType::Satellite,
                     });
                 }
             }
