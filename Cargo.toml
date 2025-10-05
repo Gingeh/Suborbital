@@ -9,19 +9,20 @@ bevy = { version = "0.17", default-features = false, features = [
     "bevy_state",
     "bevy_ui_render",
     "qoi",
-    "x11",
-    "wayland",
 ] }
 rand = { version = "0.9", default-features = false, features = ["os_rng"] }
 webbrowser = { version = "1", default-features = false, features = [
     "hardened",
 ] }
 
-[target.wasm32-unknown-unknown.dependencies]
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
 bevy = { version = "0.17", default-features = false, features = [
-    "bevy_state",
-    "bevy_ui_render",
-    "qoi",
+    "x11",
+    "wayland",
+] }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+bevy = { version = "0.17", default-features = false, features = [
     "webgl2",
     "bevy_winit",
 ] }
