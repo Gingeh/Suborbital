@@ -1,9 +1,6 @@
 use bevy::app::AppExit;
 use bevy::prelude::*;
 
-#[cfg(target_family = "wasm")]
-use bevy::ecs::entity_disabling::Disabled;
-
 use crate::{
     AppState, GameAssets,
     utils::{button, text_style},
@@ -46,12 +43,10 @@ fn setup_menu(mut commands: Commands, assets: Res<GameAssets>) {
                 },
             ),
             (MenuButton::Play, button("Play", &assets)),
-            (
-                MenuButton::Quit,
-                button("Quit", &assets),
-                #[cfg(target_family = "wasm")]
-                Disabled
-            ),
+            {
+                #[cfg(not(target_family = "wasm"))]
+                (MenuButton::Quit, button("Quit", &assets))
+            },
         ],
     ));
 

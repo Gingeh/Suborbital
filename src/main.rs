@@ -99,11 +99,14 @@ fn main() {
 
 fn setup(mut commands: Commands, assets: Res<GameAssets>) {
     commands.spawn(Camera2d);
-    commands.spawn((Background, Sprite {
-        image: assets.background.clone(),
-        custom_size: Some(Vec2::new(2186.0, 800.0)),
-        ..default()
-    }));
+    commands.spawn((
+        Background,
+        Sprite {
+            image: assets.background.clone(),
+            custom_size: Some(Vec2::new(2186.0, 800.0)),
+            ..default()
+        },
+    ));
 }
 
 fn animate_background(
