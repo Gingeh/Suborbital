@@ -1,7 +1,9 @@
 use std::time::Duration;
 
-use bevy::ecs::lifecycle;
-use bevy::prelude::*;
+use bevy::{
+    ecs::{lifecycle::HookContext, world::DeferredWorld},
+    prelude::*,
+};
 use rand::{Rng, TryRngCore, rngs::OsRng};
 
 use crate::{
@@ -21,9 +23,7 @@ impl Plugin for SatellitePlugin {
             .add_systems(
                 Update,
                 update_satellites.run_if(in_state(AppState::Playing)),
-            )
-            .add_observer(spawn_observer)
-            .add_observer(despawn_observer);
+            );
     }
 }
 
@@ -40,9 +40,6 @@ impl OccupiedDirections {
 }
 
 #[derive(Component)]
-pub struct Satellite;
-
-#[derive(Component)]
 enum SatelliteState {
     Idle,
     Charging,
@@ -57,14 +54,15 @@ const fn correct_ship_direction(hazard_direction: Direction) -> Direction {
     hazard_direction.rotate_ccw()
 }
 
-fn spawn_observer(
-    event: On<lifecycle::Add, Satellite>,
-    mut commands: Commands,
-    game_assets: Res<GameAssets>,
-    mut previous_correct_direction: ResMut<PreviousCorrectDirection>,
-    mut occupied_directions: ResMut<OccupiedDirections>,
-) {
-    let entity = event.entity;
+#[derive(Component)]
+#[component(on_add = spawn_hook, on_remove = despawn_hook)]
+pub struct Satellite;
+
+fn spawn_hook(mut world: DeferredWorld, context: HookContext) {
+    let entity = context.entity;
+
+    let occupied_directions = world.resource::<OccupiedDirections>();
+    let previous_correct_direction = world.resource::<PreviousCorrectDirection>();
 
     let mut direction: Direction = OsRng.unwrap_err().random();
     while **previous_correct_direction == correct_ship_direction(direction)
@@ -72,15 +70,19 @@ fn spawn_observer(
     {
         direction = OsRng.unwrap_err().random();
     }
-    **previous_correct_direction = correct_ship_direction(direction);
-    occupied_directions.set_occupied(direction, true);
 
-    commands.entity(entity).insert((
+    **world.resource_mut::<PreviousCorrectDirection>() = correct_ship_direction(direction);
+    world
+        .resource_mut::<OccupiedDirections>()
+        .set_occupied(direction, true);
+
+    let image = world.resource::<GameAssets>().satilite_idle.clone();
+    world.commands().entity(entity).insert((
         direction,
         SatelliteState::Idle,
         SatelliteTimer(Timer::from_seconds(1.5, TimerMode::Once)),
         Sprite {
-            image: game_assets.satilite_idle.clone(),
+            image,
             custom_size: Some(Vec2 { x: 120.0, y: 120.0 }),
             ..default()
         },
@@ -90,15 +92,12 @@ fn spawn_observer(
     ));
 }
 
-fn despawn_observer(
-    event: On<lifecycle::Remove, Satellite>,
-    mut occupied_directions: ResMut<OccupiedDirections>,
-    satellites: Query<&Direction>,
-) {
-    let entity = event.entity;
-    if let Ok(direction) = satellites.get(entity) {
-        occupied_directions.set_occupied(*direction, false);
-    }
+fn despawn_hook(mut world: DeferredWorld, context: HookContext) {
+    let entity = context.entity;
+    let direction = *world.get(entity).unwrap();
+    world
+        .resource_mut::<OccupiedDirections>()
+        .set_occupied(direction, false);
 }
 
 fn update_satellites(

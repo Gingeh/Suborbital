@@ -1,5 +1,7 @@
-use bevy::ecs::lifecycle;
-use bevy::prelude::*;
+use bevy::{
+    ecs::{lifecycle::HookContext, world::DeferredWorld},
+    prelude::*,
+};
 use rand::{Rng, TryRngCore, rngs::OsRng};
 
 use crate::{
@@ -12,36 +14,33 @@ pub struct CratePlugin;
 
 impl Plugin for CratePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, update_crates.run_if(in_state(AppState::Playing)))
-            .add_observer(spawn_observer);
+        app.add_systems(Update, update_crates.run_if(in_state(AppState::Playing)));
     }
 }
-
-#[derive(Component)]
-pub struct Crate;
 
 const fn correct_ship_direction(hazard_direction: Direction) -> Direction {
     hazard_direction.rotate_cw().rotate_cw()
 }
 
-fn spawn_observer(
-    event: On<lifecycle::Add, Crate>,
-    mut commands: Commands,
-    game_assets: Res<GameAssets>,
-    mut previous_correct_direction: ResMut<PreviousCorrectDirection>,
-) {
-    let entity = event.entity;
+#[derive(Component)]
+#[component(on_add = spawn_hook)]
+pub struct Crate;
 
+fn spawn_hook(mut world: DeferredWorld, context: HookContext) {
+    let entity = context.entity;
+
+    let mut previous_correct_direction = world.resource_mut::<PreviousCorrectDirection>();
     let mut direction: Direction = OsRng.unwrap_err().random();
     while **previous_correct_direction == correct_ship_direction(direction) {
         direction = OsRng.unwrap_err().random();
     }
     **previous_correct_direction = correct_ship_direction(direction);
 
-    commands.entity(entity).insert((
+    let image = world.resource::<GameAssets>().health_crate.clone();
+    world.commands().entity(entity).insert((
         direction,
         Sprite {
-            image: game_assets.health_crate.clone(),
+            image,
             custom_size: Some(Vec2 { x: 50.0, y: 50.0 }),
             ..default()
         },
