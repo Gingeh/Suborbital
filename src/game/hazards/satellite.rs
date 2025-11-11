@@ -1,9 +1,19 @@
-use std::time::Duration;
+use std::{
+    future::join,
+    sync::atomic::{self, AtomicBool},
+    time::Duration,
+};
 
 use bevy::{
-    ecs::{lifecycle::HookContext, world::DeferredWorld},
+    ecs::{
+        lifecycle::HookContext,
+        world::{DeferredWorld, WorldId},
+    },
     prelude::*,
+    tasks::{AsyncComputeTaskPool, Task},
 };
+use bevy_malek_async::{CreateEcsTask, EcsTask};
+use futures_timer::Delay;
 use rand::{Rng, TryRngCore, rngs::OsRng};
 
 use crate::{
@@ -19,11 +29,7 @@ pub struct SatellitePlugin;
 
 impl Plugin for SatellitePlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(OccupiedDirections([false; 4]))
-            .add_systems(
-                Update,
-                update_satellites.run_if(in_state(AppState::Playing)),
-            );
+        app.insert_resource(OccupiedDirections([false; 4]));
     }
 }
 
@@ -40,15 +46,9 @@ impl OccupiedDirections {
 }
 
 #[derive(Component)]
-enum SatelliteState {
-    Idle,
-    Charging,
-    Firing,
-    Retreating,
+struct SatelliteTask {
+    _task: Task<()>,
 }
-
-#[derive(Component, Deref, DerefMut)]
-struct SatelliteTimer(Timer);
 
 const fn correct_ship_direction(hazard_direction: Direction) -> Direction {
     hazard_direction.rotate_ccw()
@@ -76,11 +76,12 @@ fn spawn_hook(mut world: DeferredWorld, context: HookContext) {
         .resource_mut::<OccupiedDirections>()
         .set_occupied(direction, true);
 
+    let task = AsyncComputeTaskPool::get().spawn(animate_satellite(world.id(), entity));
+
     let image = world.resource::<GameAssets>().satilite_idle.clone();
     world.commands().entity(entity).insert((
         direction,
-        SatelliteState::Idle,
-        SatelliteTimer(Timer::from_seconds(1.5, TimerMode::Once)),
+        SatelliteTask { _task: task },
         Sprite {
             image,
             custom_size: Some(Vec2 { x: 120.0, y: 120.0 }),
@@ -100,81 +101,118 @@ fn despawn_hook(mut world: DeferredWorld, context: HookContext) {
         .set_occupied(direction, false);
 }
 
-fn update_satellites(
-    mut commands: Commands,
-    time: Res<Time>,
-    query: Query<(
-        &mut SatelliteTimer,
-        &mut SatelliteState,
-        &mut Sprite,
-        &mut Transform,
-        &Direction,
-        Entity,
-    )>,
-    assets: Res<GameAssets>,
-    spaceship: Single<(Entity, &Direction), With<Spaceship>>,
-    mut health: ResMut<Health>,
-) {
-    let (ship_entity, &ship_direction) = spaceship.into_inner();
-    for (mut timer, mut state, mut sprite, mut transform, &direction, entity) in query {
-        timer.tick(time.delta());
+async fn repeat_for_duration<Fut: IntoFuture>(mut repeater: impl FnMut() -> Fut, dur: Duration) {
+    let done = AtomicBool::new(false);
+    join!(
+        async {
+            loop {
+                repeater().await;
+                Delay::new(Duration::from_millis(16)).await; // microsleep to avoid thrashing
+                if done.load(atomic::Ordering::SeqCst) {
+                    break;
+                }
+            }
+        },
+        async {
+            Delay::new(dur).await;
+            done.store(true, atomic::Ordering::SeqCst);
+        }
+    )
+    .await;
+}
 
-        match *state {
-            SatelliteState::Idle => {
+async fn animate_satellite(world_id: WorldId, entity: Entity) {
+    // move in for 1.5 secs
+    let task_id = EcsTask::<Query<(&mut Transform, &Direction)>>::new(world_id);
+    repeat_for_duration(
+        || {
+            task_id.clone().run_system(Update, |mut query| {
+                let (mut transform, &direction) = query.get_mut(entity).unwrap();
                 transform.translation = transform
                     .translation
                     .lerp(direction.to_vec3() * -320.0 + Vec3::Z, 0.1);
+            })
+        },
+        Duration::from_secs_f32(1.5),
+    )
+    .await;
 
-                if timer.is_finished() {
-                    *state = SatelliteState::Charging;
-                    sprite.image = assets.satilite_charging.clone();
-                    timer.set_duration(Duration::from_secs_f32(0.5));
-                    timer.reset();
-                    commands
-                        .entity(entity)
-                        .insert(Shaking(Timer::from_seconds(1.0, TimerMode::Once)));
-                }
-            }
-            SatelliteState::Charging => {
-                if timer.is_finished() {
-                    *state = SatelliteState::Firing;
-                    timer.set_duration(Duration::from_secs_f32(0.5));
-                    timer.reset();
+    // change sprite, start shaking, and wait 0.5 secs
+    world_id
+        .ecs_task::<(Commands, Query<&mut Sprite>, Res<GameAssets>)>()
+        .run_system(Update, |(mut commands, mut query, assets)| {
+            let mut sprite = query.get_mut(entity).unwrap();
+            sprite.image = assets.satilite_charging.clone();
+            commands
+                .entity(entity)
+                .insert(Shaking(Timer::from_seconds(0.5, TimerMode::Once)));
+        })
+        .await;
+    Delay::new(Duration::from_secs_f32(0.5)).await;
 
-                    commands.entity(entity).with_child((
-                        Sprite {
-                            image: assets.laser.clone(),
-                            custom_size: Some(Vec2 { x: 20.0, y: 300.0 }),
-                            ..default()
-                        },
-                        Transform::from_translation(Vec3::new(0.0, 200.0, -1.0)),
-                    ));
-                    if ship_direction == correct_ship_direction(direction) {
-                        commands.trigger(ScoreEvent);
-                    } else {
-                        **health -= 1;
-                        commands.entity(ship_entity).insert(shake_for_ms(100));
-                    }
+    // fire the laser!
+    world_id
+        .ecs_task::<(
+            Commands,
+            Query<&Direction>,
+            Res<GameAssets>,
+            ResMut<Health>,
+            Single<(Entity, &Direction), With<Spaceship>>,
+        )>()
+        .run_system(
+            Update,
+            |(mut commands, query, assets, mut health, spaceship)| {
+                let (ship_entity, &ship_direction) = spaceship.into_inner();
+                let &direction = query.get(entity).unwrap();
+                commands.entity(entity).with_child((
+                    Sprite {
+                        image: assets.laser.clone(),
+                        custom_size: Some(Vec2 { x: 20.0, y: 300.0 }),
+                        ..default()
+                    },
+                    Transform::from_translation(Vec3::new(0.0, 200.0, -1.0)),
+                ));
+                if ship_direction == correct_ship_direction(direction) {
+                    commands.trigger(ScoreEvent);
+                } else {
+                    **health -= 1;
+                    commands.entity(ship_entity).insert(shake_for_ms(100));
                 }
-            }
-            SatelliteState::Firing => {
-                if timer.is_finished() {
-                    *state = SatelliteState::Retreating;
-                    sprite.image = assets.satilite_idle.clone();
-                    timer.set_duration(Duration::from_secs_f32(1.0));
-                    timer.reset();
-                    commands.entity(entity).despawn_children();
-                }
-            }
-            SatelliteState::Retreating => {
+            },
+        )
+        .await;
+    Delay::new(Duration::from_secs_f32(0.5)).await;
+
+    // change sprite back and despawn laser
+    world_id
+        .ecs_task::<(Commands, Query<&mut Sprite>, Res<GameAssets>)>()
+        .run_system(Update, |(mut commands, mut query, assets)| {
+            let mut sprite = query.get_mut(entity).unwrap();
+            sprite.image = assets.satilite_idle.clone();
+            commands.entity(entity).despawn_children();
+        })
+        .await;
+
+    // move out for 1 sec
+    let task_id = EcsTask::<Query<(&mut Transform, &Direction)>>::new(world_id);
+    repeat_for_duration(
+        || {
+            task_id.clone().run_system(Update, |mut query| {
+                let (mut transform, &direction) = query.get_mut(entity).unwrap();
                 transform.translation = transform
                     .translation
                     .lerp(direction.to_vec3() * -500.0 + Vec3::Z, 0.1);
+            })
+        },
+        Duration::from_secs_f32(1.0),
+    )
+    .await;
 
-                if timer.is_finished() {
-                    commands.entity(entity).despawn();
-                }
-            }
-        }
-    }
+    // despawn self
+    world_id
+        .ecs_task::<Commands>()
+        .run_system(Update, |mut commands| {
+            commands.entity(entity).despawn();
+        })
+        .await;
 }

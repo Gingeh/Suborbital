@@ -6,25 +6,27 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 bevy = { version = "0.18", default-features = false, features = [
-    "bevy_state",
-    "bevy_ui_render",
-    "qoi",
+  "bevy_state",
+  "bevy_ui_render",
+  "qoi",
 ] }
 rand = { version = "0.9", default-features = false, features = ["os_rng"] }
 webbrowser = { version = "1", default-features = false, features = [
-    "hardened",
+  "hardened",
 ] }
+futures-timer = "3"
+bevy_malek_async = "0.3"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 bevy = { version = "0.18", default-features = false, features = [
-    "x11",
-    "wayland",
+  "x11",
+  "wayland",
 ] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 bevy = { version = "0.18", default-features = false, features = [
-    "webgl2",
-    "bevy_winit",
+  "webgl2",
+  "bevy_winit",
 ] }
 getrandom = { version = "^0.3", features = ["wasm_js"] }
 

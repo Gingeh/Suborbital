@@ -1,9 +1,11 @@
 #![allow(clippy::type_complexity)]
+#![feature(future_join)]
 
 use std::f32::consts::TAU;
 
 use bevy::prelude::*;
 use bevy::{asset::AssetMetaCheck, window::WindowResolution};
+use bevy_malek_async::AsyncEcsPlugin;
 
 mod game;
 mod gameover;
@@ -68,7 +70,7 @@ struct Background;
 fn main() {
     App::new()
         .insert_resource(ClearColor(Srgba::rgb_u8(0x2d, 0x1f, 0x4a).into()))
-        .add_plugins(
+        .add_plugins((
             DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
@@ -83,7 +85,8 @@ fn main() {
                     meta_check: AssetMetaCheck::Never,
                     ..default()
                 }),
-        )
+            AsyncEcsPlugin,
+        ))
         .insert_state(AppState::Splash)
         .init_resource::<GameAssets>()
         .add_plugins((
