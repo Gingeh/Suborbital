@@ -5,7 +5,7 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-bevy = { version = "0.17", default-features = false, features = [
+bevy = { version = "0.18", default-features = false, features = [
     "bevy_state",
     "bevy_ui_render",
     "qoi",
@@ -16,16 +16,17 @@ webbrowser = { version = "1", default-features = false, features = [
 ] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-bevy = { version = "0.17", default-features = false, features = [
+bevy = { version = "0.18", default-features = false, features = [
     "x11",
     "wayland",
 ] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-bevy = { version = "0.17", default-features = false, features = [
+bevy = { version = "0.18", default-features = false, features = [
     "webgl2",
     "bevy_winit",
 ] }
+getrandom = { version = "^0.3", features = ["wasm_js"] }
 
 [profile.web-release]
 inherits = "release"
