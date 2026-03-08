@@ -5,7 +5,7 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-bevy = { version = "0.18", default-features = false, features = [
+bevy = { git = "https://github.com/MalekiRe/bevy", branch = "malek/async_ecs", default-features = false, features = [
   "bevy_state",
   "bevy_ui_render",
   "qoi",
@@ -15,16 +15,15 @@ webbrowser = { version = "1", default-features = false, features = [
   "hardened",
 ] }
 futures-timer = "3"
-bevy_malek_async = "0.3"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-bevy = { version = "0.18", default-features = false, features = [
+bevy = { git = "https://github.com/MalekiRe/bevy", branch = "malek/async_ecs", default-features = false, features = [
   "x11",
   "wayland",
 ] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-bevy = { version = "0.18", default-features = false, features = [
+bevy = { git = "https://github.com/MalekiRe/bevy", branch = "malek/async_ecs", default-features = false, features = [
   "webgl2",
   "bevy_winit",
 ] }

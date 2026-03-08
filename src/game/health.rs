@@ -25,7 +25,7 @@ impl Plugin for HealthPlugin {
             )
             .add_systems(
                 Update,
-                update_health_display
+                (update_health_display, reset_health)
                     .run_if(in_state(AppState::Playing))
                     .run_if(resource_changed::<Health>),
             );

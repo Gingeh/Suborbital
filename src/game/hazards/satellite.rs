@@ -5,14 +5,11 @@ use std::{
 };
 
 use bevy::{
-    ecs::{
-        lifecycle::HookContext,
-        world::{DeferredWorld, WorldId},
-    },
+    async_bridge::prelude::{AsyncWorld, async_world_sync_point},
+    ecs::{lifecycle::HookContext, world::DeferredWorld},
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task},
 };
-use bevy_malek_async::{CreateEcsTask, EcsTask};
 use futures_timer::Delay;
 use rand::{Rng, TryRngCore, rngs::OsRng};
 
@@ -29,9 +26,12 @@ pub struct SatellitePlugin;
 
 impl Plugin for SatellitePlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(OccupiedDirections([false; 4]));
+        app.insert_resource(OccupiedDirections([false; 4]))
+            .add_systems(Update, async_world_sync_point::<SatelliteSyncPoint>);
     }
 }
+
+struct SatelliteSyncPoint;
 
 #[derive(Resource)]
 struct OccupiedDirections([bool; 4]);
@@ -76,7 +76,8 @@ fn spawn_hook(mut world: DeferredWorld, context: HookContext) {
         .resource_mut::<OccupiedDirections>()
         .set_occupied(direction, true);
 
-    let task = AsyncComputeTaskPool::get().spawn(animate_satellite(world.id(), entity));
+    let async_world = world.resource::<AsyncWorld>().clone();
+    let task = AsyncComputeTaskPool::get().spawn(animate_satellite(async_world, entity));
 
     let image = world.resource::<GameAssets>().satilite_idle.clone();
     world.commands().entity(entity).insert((
@@ -121,12 +122,12 @@ async fn repeat_for_duration<Fut: IntoFuture>(mut repeater: impl FnMut() -> Fut,
     .await;
 }
 
-async fn animate_satellite(world_id: WorldId, entity: Entity) {
+async fn animate_satellite(async_world: AsyncWorld, entity: Entity) {
     // move in for 1.5 secs
-    let task_id = EcsTask::<Query<(&mut Transform, &Direction)>>::new(world_id);
+    let task = async_world.system_state::<Query<(&mut Transform, &Direction)>>();
     repeat_for_duration(
         || {
-            task_id.clone().run_system(Update, |mut query| {
+            task.bridge(SatelliteSyncPoint, |mut query| {
                 let (mut transform, &direction) = query.get_mut(entity).unwrap();
                 transform.translation = transform
                     .translation
@@ -138,29 +139,30 @@ async fn animate_satellite(world_id: WorldId, entity: Entity) {
     .await;
 
     // change sprite, start shaking, and wait 0.5 secs
-    world_id
-        .ecs_task::<(Commands, Query<&mut Sprite>, Res<GameAssets>)>()
-        .run_system(Update, |(mut commands, mut query, assets)| {
+    async_world
+        .system_state::<(Commands, Query<&mut Sprite>, Res<GameAssets>)>()
+        .bridge(SatelliteSyncPoint, |(mut commands, mut query, assets)| {
             let mut sprite = query.get_mut(entity).unwrap();
             sprite.image = assets.satilite_charging.clone();
             commands
                 .entity(entity)
                 .insert(Shaking(Timer::from_seconds(0.5, TimerMode::Once)));
         })
-        .await;
+        .await
+        .unwrap();
     Delay::new(Duration::from_secs_f32(0.5)).await;
 
     // fire the laser!
-    world_id
-        .ecs_task::<(
+    async_world
+        .system_state::<(
             Commands,
             Query<&Direction>,
             Res<GameAssets>,
             ResMut<Health>,
             Single<(Entity, &Direction), With<Spaceship>>,
         )>()
-        .run_system(
-            Update,
+        .bridge(
+            SatelliteSyncPoint,
             |(mut commands, query, assets, mut health, spaceship)| {
                 let (ship_entity, &ship_direction) = spaceship.into_inner();
                 let &direction = query.get(entity).unwrap();
@@ -180,24 +182,26 @@ async fn animate_satellite(world_id: WorldId, entity: Entity) {
                 }
             },
         )
-        .await;
+        .await
+        .unwrap();
     Delay::new(Duration::from_secs_f32(0.5)).await;
 
     // change sprite back and despawn laser
-    world_id
-        .ecs_task::<(Commands, Query<&mut Sprite>, Res<GameAssets>)>()
-        .run_system(Update, |(mut commands, mut query, assets)| {
+    async_world
+        .system_state::<(Commands, Query<&mut Sprite>, Res<GameAssets>)>()
+        .bridge(SatelliteSyncPoint, |(mut commands, mut query, assets)| {
             let mut sprite = query.get_mut(entity).unwrap();
             sprite.image = assets.satilite_idle.clone();
             commands.entity(entity).despawn_children();
         })
-        .await;
+        .await
+        .unwrap();
 
     // move out for 1 sec
-    let task_id = EcsTask::<Query<(&mut Transform, &Direction)>>::new(world_id);
+    let task_id = async_world.system_state::<Query<(&mut Transform, &Direction)>>();
     repeat_for_duration(
         || {
-            task_id.clone().run_system(Update, |mut query| {
+            task_id.bridge(SatelliteSyncPoint, |mut query| {
                 let (mut transform, &direction) = query.get_mut(entity).unwrap();
                 transform.translation = transform
                     .translation
@@ -209,10 +213,11 @@ async fn animate_satellite(world_id: WorldId, entity: Entity) {
     .await;
 
     // despawn self
-    world_id
-        .ecs_task::<Commands>()
-        .run_system(Update, |mut commands| {
+    async_world
+        .system_state::<Commands>()
+        .bridge(SatelliteSyncPoint, |mut commands| {
             commands.entity(entity).despawn();
         })
-        .await;
+        .await
+        .unwrap();
 }

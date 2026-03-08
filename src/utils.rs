@@ -22,8 +22,8 @@ pub fn button(text: impl Into<String>, assets: &GameAssets) -> impl Bundle {
         children![(
             Text::new(text),
             TextFont {
-                font: assets.font.clone(),
-                font_size: 40.0,
+                font: assets.font.clone().into(),
+                font_size: FontSize::Px(40.0),
                 ..default()
             },
             TextColor(Color::BLACK),
@@ -34,8 +34,8 @@ pub fn button(text: impl Into<String>, assets: &GameAssets) -> impl Bundle {
 pub fn text_style(font_size: f32, assets: &GameAssets) -> impl Bundle {
     (
         TextFont {
-            font: assets.font.clone(),
-            font_size,
+            font: assets.font.clone().into(),
+            font_size: FontSize::Px(font_size),
             ..default()
         },
         TextColor(Color::WHITE),

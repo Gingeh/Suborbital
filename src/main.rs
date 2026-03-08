@@ -5,7 +5,6 @@ use std::f32::consts::TAU;
 
 use bevy::prelude::*;
 use bevy::{asset::AssetMetaCheck, window::WindowResolution};
-use bevy_malek_async::AsyncEcsPlugin;
 
 mod game;
 mod gameover;
@@ -70,23 +69,20 @@ struct Background;
 fn main() {
     App::new()
         .insert_resource(ClearColor(Srgba::rgb_u8(0x2d, 0x1f, 0x4a).into()))
-        .add_plugins((
-            DefaultPlugins
-                .set(WindowPlugin {
-                    primary_window: Some(Window {
-                        title: "Suborbital".to_string(),
-                        resolution: WindowResolution::new(800, 800),
-                        resizable: false,
-                        ..default()
-                    }),
-                    ..default()
-                })
-                .set(AssetPlugin {
-                    meta_check: AssetMetaCheck::Never,
+        .add_plugins((DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    title: "Suborbital".to_string(),
+                    resolution: WindowResolution::new(800, 800),
+                    resizable: false,
                     ..default()
                 }),
-            AsyncEcsPlugin,
-        ))
+                ..default()
+            })
+            .set(AssetPlugin {
+                meta_check: AssetMetaCheck::Never,
+                ..default()
+            }),))
         .insert_state(AppState::Splash)
         .init_resource::<GameAssets>()
         .add_plugins((
